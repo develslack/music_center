@@ -47,7 +47,7 @@ int get_user_service_name(const char *body, char *json_out, int out_size) {
 
     char query[512];
     snprintf(query, sizeof(query),
-             "SELECT id, nombre, email, rol "
+             "SELECT id, nombre, email, rol_id "
              "FROM mc_usuarios WHERE nombre = \"%s\" LIMIT 1;", decoded_name);
 
     DBResult *res = db_query(query);
@@ -367,7 +367,7 @@ int users_service_login(const char *email, const char *password, char *error_msg
     strncpy(user_out->email, row[2], sizeof(user_out->email) - 1);
     user_out->email[sizeof(user_out->email) - 1] = '\0';
 
-    user_out->rol_id = atoi(row[3]);
+    user_out->rol_id = atoi(row[4]);
 
     mysql_free_result(res);
     mysql_close(conn);
@@ -488,7 +488,7 @@ static void users_service_list(int client, const char *body) {
                            row[0] ? row[0] : "null",
                            row[1] ? row[1] : "",
                            row[2] ? row[2] : "",
-                           row[3] ? row[3] : "");
+                           row[3] ? row[4] : "");
     }
 
     offset += snprintf(buffer + offset, sizeof(buffer) - offset, "]");
