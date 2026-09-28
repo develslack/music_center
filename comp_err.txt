@@ -1,0 +1,96 @@
+En el fichero incluido desde backend/src/system/routes.c:8:
+backend/src/system/auth.h:5:13: aviso: ‘route_home’ se declaró ‘static’ pero nunca se define [-Wunused-function]
+    5 | static void route_home(int client, const char *body);
+      |             ^~~~~~~~~~
+backend/src/system/auth.h:6:13: aviso: ‘route_password’ se declaró ‘static’ pero nunca se define [-Wunused-function]
+    6 | static void route_password(int client, const char *body);
+      |             ^~~~~~~~~~~~~~
+backend/src/system/auth.h:7:13: aviso: ‘route_change_password’ se declaró ‘static’ pero nunca se define [-Wunused-function]
+    7 | static void route_change_password(int client, const char *body);
+      |             ^~~~~~~~~~~~~~~~~~~~~
+En el fichero incluido desde backend/src/system/routes.c:9:
+backend/src/system/users.h:8:13: aviso: ‘route_get_users’ se declaró ‘static’ pero nunca se define [-Wunused-function]
+    8 | static void route_get_users(int client, const char *body);
+      |             ^~~~~~~~~~~~~~~
+backend/src/system/users.h:9:13: aviso: ‘route_get_register’ se declaró ‘static’ pero nunca se define [-Wunused-function]
+    9 | static void route_get_register(int client, const char *body);
+      |             ^~~~~~~~~~~~~~~~~~
+backend/src/system/users.h:10:13: aviso: ‘route_post_register’ se declaró ‘static’ pero nunca se define [-Wunused-function]
+   10 | static void route_post_register(int client, const char *body);
+      |             ^~~~~~~~~~~~~~~~~~~
+En el fichero incluido desde backend/src/system/routes.c:12:
+backend/src/system/session_manager.h:24:13: aviso: ‘trim_string’ se declaró ‘static’ pero nunca se define [-Wunused-function]
+   24 | static void trim_string(char *str);
+      |             ^~~~~~~~~~~
+En el fichero incluido desde backend/src/system/routes.c:12:
+backend/src/system/session_manager.h:52:13: aviso: ‘route_post_set_session_context’ se declaró ‘static’ pero nunca se define [-Wunused-function]
+   52 | static void route_post_set_session_context(int client, const char* body);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+backend/src/system/session_manager.h:53:13: aviso: ‘route_post_logout_session’ se declaró ‘static’ pero nunca se define [-Wunused-function]
+   53 | static void route_post_logout_session(int client, const char* body);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~
+En el fichero incluido desde backend/src/bussiness/users_service.c:10:
+backend/src/bussiness/../system/session_manager.h:24:13: aviso: ‘trim_string’ se declaró ‘static’ pero nunca se define [-Wunused-function]
+   24 | static void trim_string(char *str);
+      |             ^~~~~~~~~~~
+En el fichero incluido desde backend/src/bussiness/users_service.c:10:
+backend/src/bussiness/../system/session_manager.h:52:13: aviso: ‘route_post_set_session_context’ se declaró ‘static’ pero nunca se define [-Wunused-function]
+   52 | static void route_post_set_session_context(int client, const char* body);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+backend/src/bussiness/../system/session_manager.h:53:13: aviso: ‘route_post_logout_session’ se declaró ‘static’ pero nunca se define [-Wunused-function]
+   53 | static void route_post_logout_session(int client, const char* body);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~
+backend/src/bussiness/users_service.c: En la función ‘users_service_register’:
+backend/src/bussiness/users_service.c:175:64: aviso: la salida de la directiva ‘%s’ podría truncarse al escribir hasta 255 bytes en una región de tamaño 207 [-Wformat-truncation=]
+  175 |              "SELECT COUNT(*) FROM mc_usuarios WHERE nombre = '%s' and email = '%s'", decoded_nombre, decoded_email);
+      |                                                                ^~                     ~~~~~~~~~~~~~~
+backend/src/bussiness/users_service.c:174:5: nota: ‘snprintf’ manda entre 66 y 576 bytes a un destino de tamaño 256
+  174 |     snprintf(query_check, sizeof(query_check),
+      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  175 |              "SELECT COUNT(*) FROM mc_usuarios WHERE nombre = '%s' and email = '%s'", decoded_nombre, decoded_email);
+      |              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+backend/src/bussiness/users_service.c:192:14: aviso: la salida de la directiva ‘%s’ podría truncarse escribiendo hasta 255 bytes en una región de un tamaño entre 187 y 442 [-Wformat-truncation=]
+  192 |              "INSERT INTO mc_usuarios (nombre, email, password, rol_id) "
+      |              ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  193 |              "VALUES ('%s','%s','%s', %d)",
+  194 |              decoded_nombre, decoded_email, hash, rol);
+      |                              ~~~~~~~~~~~~~
+backend/src/bussiness/users_service.c:193:29: nota: la cadena de formato se definió aquí
+  193 |              "VALUES ('%s','%s','%s', %d)",
+      |                             ^~
+backend/src/bussiness/users_service.c:191:5: nota: ‘snprintf’ manda entre 79 y 639 bytes a un destino de tamaño 512
+  191 |     snprintf(query, sizeof(query),
+      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  192 |              "INSERT INTO mc_usuarios (nombre, email, password, rol_id) "
+      |              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  193 |              "VALUES ('%s','%s','%s', %d)",
+      |              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  194 |              decoded_nombre, decoded_email, hash, rol);
+      |              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+backend/src/bussiness/users_service.c: En la función ‘users_service_password’:
+backend/src/bussiness/users_service.c:231:63: aviso: la salida de la directiva ‘%s’ podría truncarse al escribir hasta 255 bytes en una región de tamaño 208 [-Wformat-truncation=]
+  231 |              "SELECT COUNT(*) FROM mc_usuarios WHERE email = '%s'", decoded_email);
+      |                                                               ^~    ~~~~~~~~~~~~~
+backend/src/bussiness/users_service.c:230:5: nota: ‘snprintf’ manda entre 50 y 305 bytes a un destino de tamaño 256
+  230 |     snprintf(query_check, sizeof(query_check),
+      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  231 |              "SELECT COUNT(*) FROM mc_usuarios WHERE email = '%s'", decoded_email);
+      |              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+En el nivel principal:
+backend/src/bussiness/users_service.c:441:14: aviso: se define ‘json_escape’ pero no se usa [-Wunused-function]
+  441 | static char *json_escape(const char *src) {
+      |              ^~~~~~~~~~~
+backend/src/bussiness/users_service.c:426:13: aviso: se define ‘append_str’ pero no se usa [-Wunused-function]
+  426 | static void append_str(char **dest, size_t *size, const char *src) {
+      |             ^~~~~~~~~~
+En el fichero incluido desde backend/src/main.c:10:
+backend/src/system/session_manager.h:24:13: aviso: ‘trim_string’ se declaró ‘static’ pero nunca se define [-Wunused-function]
+   24 | static void trim_string(char *str);
+      |             ^~~~~~~~~~~
+En el fichero incluido desde backend/src/main.c:10:
+backend/src/system/session_manager.h:52:13: aviso: ‘route_post_set_session_context’ se declaró ‘static’ pero nunca se define [-Wunused-function]
+   52 | static void route_post_set_session_context(int client, const char* body);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+backend/src/system/session_manager.h:53:13: aviso: ‘route_post_logout_session’ se declaró ‘static’ pero nunca se define [-Wunused-function]
+   53 | static void route_post_logout_session(int client, const char* body);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~

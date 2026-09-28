@@ -1,0 +1,10 @@
+# ================================================================================================== #
+create table if not exists mc_usuarios(
+id INT AUTO_INCREMENT PRIMARY KEY,
+nombre VARCHAR(50) NOT NULL,
+email VARCHAR(100) UNIQUE NOT NULL,
+password VARCHAR(260) NOT NULL,
+rol_id int(11) not null
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+select * from mc_usuarios;
