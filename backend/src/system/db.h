@@ -7,7 +7,7 @@
 #define HOST "localhost"
 #define USER "root"
 #define PASS "slack142"
-#define DBASE "music_center"
+#define DBASE "mc_database"
 #define PORT 3306
 
 typedef MYSQL_RES DBResult;

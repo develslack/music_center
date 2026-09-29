@@ -1,4 +1,5 @@
 #!/bin/bash
+# -fsanitize=address (verifica donde se esta produciendo el error de segmentation fault)
 clear
 echo "# ======================================================= #"
 echo "COMPILANDO APP (Music-Center)"
@@ -18,6 +19,8 @@ gcc -Wall -g -std=gnu11  -o backend/bin/music-center \
     backend/src/system/system_struct.h backend/src/system/system_struct.c \
     backend/src/bussiness/users_service.h backend/src/bussiness/users_service.c \
     backend/src/bussiness/roles_service.h backend/src/bussiness/roles_service.c \
+    backend/src/bussiness/genres_service.h backend/src/bussiness/genres_service.c \
+    backend/src/bussiness/music_service.h backend/src/bussiness/music_service.c \
     backend/src/main.c \
     -lpthread -lmysqlclient -lssl -lcrypto 2>&1 | tee comp_err.txt
 

@@ -10,6 +10,8 @@
 #include "system/session_manager.h"
 #include "system/ArrayList.h"
 #include "bussiness/roles_service.h"
+#include "bussiness/genres_service.h"
+#include "bussiness/music_service.h"
 
 
 
@@ -38,9 +40,19 @@ int main() {
     printf("\n=== INICIANDO CONFIGURACIÓN DE MEMORIA DEL MAESTRO ===\n");
 
     // 1. SE CREA LOS ARRAYLIST
-    ArrayList* alist_roles = al_newArrayList();
-    roles_init_cache(alist_roles);
-    roles_load_storage(alist_roles);
+    //ArrayList* alist_roles = al_newArrayList();
+    //roles_init_cache(alist_roles);
+    //roles_load_storage(alist_roles);
+
+    // 2. SE CREA EL ARRAYLIST PARA GENEROS MUSICALES
+    ArrayList* alist_genres = al_newArrayList();
+    genres_init_cache(alist_genres);
+    genres_load_storage(alist_genres);
+
+    // 2. SE CREA EL ARRAYLIST PARA ALBUNES
+    ArrayList* alist_music = al_newArrayList();
+    music_init_cache(alist_music);
+    music_load_storage(alist_music);
 
     // 40. INCIALAR CACHE DE SESSION MANAGER (MODULAR)
     session_manager_init();

@@ -1,0 +1,641 @@
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <openssl/sha.h>
+#include <mysql/mysql.h>
+#include "../system/hash.h"
+#include "../system/routes.h"
+#include "../system/db.h"
+#include "../system/ArrayList.h"
+#include "music_service.h"
+
+// ===================================================================================================================================== //
+
+// Variable estática para la memoria local del módulo
+static ArrayList* pListMusicLocal = NULL;
+
+// CONSTRUCTOR
+// ===================================================================================================================================== //
+Music* newMusic(){
+
+    Music* oneMusic = (Music*)malloc(sizeof(Music));
+
+    if(oneMusic != NULL){
+        memset(oneMusic, 0, sizeof(Music));
+    }
+
+    return oneMusic;
+
+} // END OF FUNCTION
+
+// ===================================================================================================================================== //
+
+
+// ===================================================================================================================================== //
+
+// ===================================================================================================================================== //
+// Iniciliacion de cache
+// ===================================================================================================================================== //
+void music_init_cache(ArrayList* alistMusic) {
+
+    if(alistMusic != NULL) {
+        // 2. ASIGNACIÓN CRÍTICA: Aquí guardamos la dirección de memoria que viene del main
+        pListMusicLocal = alistMusic;
+        printf("===================================================================================\n");
+        printf("✅ Negociando espacio en memoria para el servicio de [ Albunes ].\n");
+    } else {
+        printf("===================================================================================\n");
+        printf("⚠️ Advertencia: Se intentó inicializar la caché de [ Albunes ] con NULL.\n");
+    }
+} // END OF FUNCTION
+
+// ===================================================================================================================================== //
+
+
+// ===================================================================================================================================== //
+// cargar datos de permisos en ArrayList
+// ===================================================================================================================================== //
+void music_load_storage(ArrayList* alistMusic) {
+
+    if(alistMusic == NULL) return;
+
+    // Ajusta la query a tus necesidades
+    DBResult *res = db_query("SELECT * FROM mc_music");
+    if (!res) return;
+
+    MYSQL_ROW row;
+    while ((row = mysql_fetch_row(res))) {
+
+        Music* nMusic = newMusic();
+
+        if (nMusic != NULL) {
+            nMusic->id = row[0] ? atoi(row[0]) : 0;
+            if (row[1]) strncpy(nMusic->album_year,   row[1], sizeof(nMusic->album_year) - 1);
+            if (row[2]) strncpy(nMusic->album_name,   row[2], sizeof(nMusic->album_name) - 1);
+            if (row[3]) strncpy(nMusic->album_artist, row[3], sizeof(nMusic->album_artist) - 1);
+            if (row[4]) strncpy(nMusic->album_genre,  row[4], sizeof(nMusic->album_genre) - 1);
+            if (row[5]) strncpy(nMusic->album_art,    row[5], sizeof(nMusic->album_art) - 1);
+            if (row[6]) strncpy(nMusic->album_bio,    row[6], sizeof(nMusic->album_bio) - 1);
+            if (row[7]) strncpy(nMusic->album_path,   row[7], sizeof(nMusic->album_path) - 1);
+            nMusic->album_chart = row[8] ? atoi(row[8]) : 0;
+            alistMusic->add(alistMusic, nMusic);
+        }
+    }
+
+    db_free_result(res);
+    printf("===================================================================================\n");
+    printf("📊 Memoria: %d Albunes cargados. Espacio reservado: %d slots.\n", alistMusic->len(alistMusic), alistMusic->reservedSize);
+
+} // END OF FUNCTION
+
+// ===================================================================================================================================== //
+
+
+// ===================================================================================================================================== //
+// función auxiliar: obtiene valor de key=valor en el body
+// ===================================================================================================================================== //
+static void get_music_value(const char *body, const char *key, char *out, size_t out_size) {
+
+    char *pos = strstr(body, key);
+    if (!pos) {
+        out[0] = '\0';
+        return;
+    }
+    pos += strlen(key);
+    if (*pos == '=') pos++;
+    const char *end = strchr(pos, '&');
+    size_t len = end ? (size_t)(end - pos) : strlen(pos);
+    if (len >= out_size) len = out_size - 1;
+    strncpy(out, pos, len);
+    out[len] = '\0';
+
+} // END OF FUNCTION
+
+
+// ===================================================================================================================================== //
+
+
+// ===================================================================================================================================== //
+// 🔒 STORED PROCEDURES: Prepared Statements (GENEROS)
+// ===================================================================================================================================== //
+static int sp_insertar_music(const char* album_year, const char* album_name, const char* album_artist, const char* album_genre, const char* album_art, const char* album_bio, const char* album_path) {
+    MYSQL_STMT *stmt;
+    MYSQL_BIND bind_param[7];
+    MYSQL_BIND bind_result[1];
+    int nuevo_id = 0;
+    const char *query = "CALL sp_insertar_music(?, ?, ?, ?, ?, ?, ?)";
+
+    MYSQL *conn = connect_db();
+    if (!conn) return 0;
+
+    stmt = mysql_stmt_init(conn);
+    if (!stmt || mysql_stmt_prepare(stmt, query, strlen(query))) {
+        if (stmt) mysql_stmt_close(stmt);
+        mysql_close(conn);
+        return 0;
+    }
+
+    memset(bind_param, 0, sizeof(bind_param));
+    bind_param[0].buffer_type = MYSQL_TYPE_STRING;
+    bind_param[0].buffer = (char *)album_year;
+    bind_param[0].buffer_length = strlen(album_year);
+
+    bind_param[1].buffer_type = MYSQL_TYPE_STRING;
+    bind_param[1].buffer = (char *)album_name;
+    bind_param[1].buffer_length = strlen(album_name);
+
+    bind_param[2].buffer_type = MYSQL_TYPE_STRING;
+    bind_param[2].buffer = (char *)album_artist;
+    bind_param[2].buffer_length = strlen(album_artist);
+
+    bind_param[3].buffer_type = MYSQL_TYPE_STRING;
+    bind_param[3].buffer = (char *)album_genre;
+    bind_param[3].buffer_length = strlen(album_genre);
+
+    bind_param[4].buffer_type = MYSQL_TYPE_STRING;
+    bind_param[4].buffer = (char *)album_art;
+    bind_param[4].buffer_length = strlen(album_art);
+
+    bind_param[5].buffer_type = MYSQL_TYPE_STRING;
+    bind_param[5].buffer = (char *)album_bio;
+    bind_param[5].buffer_length = strlen(album_bio);
+
+    bind_param[6].buffer_type = MYSQL_TYPE_STRING;
+    bind_param[6].buffer = (char *)album_path;
+    bind_param[6].buffer_length = strlen(album_path);
+
+
+    if (mysql_stmt_bind_param(stmt, bind_param) || mysql_stmt_execute(stmt)) {
+        mysql_stmt_close(stmt);
+        mysql_close(conn);
+        return 0;
+    }
+
+    memset(bind_result, 0, sizeof(bind_result));
+    bind_result[0].buffer_type = MYSQL_TYPE_LONG;
+    bind_result[0].buffer = &nuevo_id;
+
+    if (mysql_stmt_bind_result(stmt, bind_result)) {
+        mysql_stmt_close(stmt);
+        mysql_close(conn);
+        return 0;
+    }
+
+    mysql_stmt_fetch(stmt);
+    mysql_stmt_free_result(stmt);
+    while (!mysql_stmt_next_result(stmt)) mysql_stmt_free_result(stmt);
+
+    mysql_stmt_close(stmt);
+    mysql_close(conn);
+    return nuevo_id;
+
+} // END OF FUNCTION
+
+
+// ===================================================================================================================================== //
+
+// ===================================================================================================================================== //
+
+
+static int sp_editar_music(int id, const char* album_year, const char* album_name, const char* album_artist, const char* album_genre, const char* album_art, const char* album_bio, const char* album_path){
+
+    MYSQL_STMT *stmt;
+    MYSQL_BIND bind_param[8];
+    const char *query = "CALL sp_editar_music(?, ?, ?, ?, ?, ?, ?, ?)";
+
+    MYSQL *conn = connect_db();
+    if (!conn) return 0;
+
+    stmt = mysql_stmt_init(conn);
+    if (!stmt || mysql_stmt_prepare(stmt, query, strlen(query))) {
+        if (stmt) mysql_stmt_close(stmt);
+        mysql_close(conn);
+        return 0;
+    }
+
+    memset(bind_param, 0, sizeof(bind_param));
+    bind_param[0].buffer_type = MYSQL_TYPE_LONG;
+    bind_param[0].buffer = (void *)&id;
+    bind_param[0].is_unsigned = 0;
+
+    bind_param[1].buffer_type = MYSQL_TYPE_STRING;
+    bind_param[1].buffer = (char *)album_year;
+    bind_param[1].buffer_length = strlen(album_year);
+
+    bind_param[2].buffer_type = MYSQL_TYPE_STRING;
+    bind_param[2].buffer = (char *)album_name;
+    bind_param[2].buffer_length = strlen(album_name);
+
+    bind_param[3].buffer_type = MYSQL_TYPE_STRING;
+    bind_param[3].buffer = (char *)album_artist;
+    bind_param[3].buffer_length = strlen(album_artist);
+
+    bind_param[4].buffer_type = MYSQL_TYPE_STRING;
+    bind_param[4].buffer = (char *)album_genre;
+    bind_param[4].buffer_length = strlen(album_genre);
+
+    bind_param[5].buffer_type = MYSQL_TYPE_STRING;
+    bind_param[5].buffer = (char *)album_art;
+    bind_param[5].buffer_length = strlen(album_art);
+
+    bind_param[6].buffer_type = MYSQL_TYPE_STRING;
+    bind_param[6].buffer = (char *)album_bio;
+    bind_param[6].buffer_length = strlen(album_bio);
+
+    bind_param[7].buffer_type = MYSQL_TYPE_STRING;
+    bind_param[7].buffer = (char *)album_path;
+    bind_param[7].buffer_length = strlen(album_path);
+
+
+    if (mysql_stmt_bind_param(stmt, bind_param) || mysql_stmt_execute(stmt)) {
+        mysql_stmt_close(stmt);
+        mysql_close(conn);
+        return 0;
+    }
+
+    while (!mysql_stmt_next_result(stmt)) mysql_stmt_free_result(stmt);
+    mysql_stmt_close(stmt);
+    mysql_close(conn);
+    return 1;
+
+} // END OF FUNCTION
+
+// ===================================================================================================================================== //
+
+// ===================================================================================================================================== //
+// FUNCION PARA NUEVO REGISTRO
+// ===================================================================================================================================== //
+int music_service_register(const char *body, char *error_msg, int error_size) {
+
+    char album_year[5];
+    char d_album_year[5];
+    char album_name[201];
+    char d_album_name[201];
+    char album_artist[201];
+    char d_album_artist[201];
+    char album_genre[101];
+    char d_album_genre[101];
+    char album_art[201];
+    char d_album_art[201];
+    char album_bio[201];
+    char d_album_bio[201];
+    char album_path[201];
+    char d_album_path[201];
+
+    get_music_value(body,"album_year", album_year, sizeof(album_year));
+    url_decode(d_album_year, album_year);
+
+    get_music_value(body,"album_name", album_name, sizeof(album_name));
+    url_decode(d_album_name, album_name);
+
+    get_music_value(body,"album_artist", album_artist, sizeof(album_artist));
+    url_decode(d_album_artist, album_artist);
+
+    get_music_value(body,"album_genre", album_genre, sizeof(album_genre));
+    url_decode(d_album_genre, album_genre);
+
+    get_music_value(body,"album_art", album_art, sizeof(album_art));
+    url_decode(d_album_art, album_art);
+
+    get_music_value(body,"album_bio", album_bio, sizeof(album_bio));
+    url_decode(d_album_bio, album_bio);
+
+    get_music_value(body,"album_path", album_path, sizeof(album_path));
+    url_decode(d_album_path, album_path);
+
+
+    if (strlen(d_album_year) == 0 || strlen(d_album_name) == 0 || strlen(album_artist) == 0 || strlen(album_genre) == 0 || strlen(album_art) == 0 || strlen(album_bio) == 0 || strlen(album_path) == 0) {
+        snprintf(error_msg, error_size, "Hay campos sin completar.");
+        return 0;
+    }
+
+    // 1. VERIFICACIÓN DE DUPLICADOS EN MEMORIA (ArrayList)
+    // Es más rápido que consultar la DB nuevamente
+    if (pListMusicLocal != NULL) {
+
+        for (int i = 0; i < pListMusicLocal->len(pListMusicLocal); i++) {
+
+            Music* nMusic = (Music*) pListMusicLocal->get(pListMusicLocal, i);
+
+            if (strcasecmp(nMusic->album_name, d_album_name) == 0) {
+
+                snprintf(error_msg, error_size, "Error: Album '%s' existente.", d_album_name);
+                return 0;
+            }
+        }
+    }
+
+    // 2. INSERCIÓN EN BASE DE DATOS
+
+    int nuevo_id = sp_insertar_music(d_album_year, d_album_name, d_album_artist, d_album_genre, d_album_art, d_album_bio, d_album_path);
+
+    if (nuevo_id <= 0) {
+        snprintf(error_msg, error_size, "Error interno al guardar en la base de datos.");
+        return 0;
+    }
+
+    Music* nuevoMusic = newMusic();
+
+    if (nuevoMusic) {
+
+        // Aprovechamos para inicializar el bloque de memoria limpio
+        memset(nuevoMusic, 0, sizeof(Music));
+
+        nuevoMusic->id = nuevo_id;
+        strncpy(nuevoMusic->album_year, d_album_year, sizeof(nuevoMusic->album_year) -1);
+        strncpy(nuevoMusic->album_name, d_album_name, sizeof(nuevoMusic->album_name) -1);
+        strncpy(nuevoMusic->album_artist, d_album_artist, sizeof(nuevoMusic->album_artist) -1);
+        strncpy(nuevoMusic->album_genre, d_album_genre, sizeof(nuevoMusic->album_genre) -1);
+        strncpy(nuevoMusic->album_art, d_album_art, sizeof(nuevoMusic->album_art) -1);
+        strncpy(nuevoMusic->album_bio, d_album_bio, sizeof(nuevoMusic->album_bio) -1);
+        strncpy(nuevoMusic->album_path, d_album_path, sizeof(nuevoMusic->album_path) -1);
+
+        // Sincronizamos el ArrayList inmediatamente
+        pListMusicLocal->add(pListMusicLocal, nuevoMusic);
+
+        printf("✅ Sincronización exitosa: Album '%s' (ID: %d) añadido a RAM.\n",
+                d_album_name, nuevo_id);
+    }
+
+    return 1;
+
+} // END OF FUNCTION
+
+
+// ===================================================================================================================================== //
+
+// ===================================================================================================================================== //
+// FUNCION EDICIÓN DE ACTIVIDAD
+// ===================================================================================================================================== //
+int music_service_edit(const char *body, char *error_msg, int error_size) {
+
+    char id_str[32];
+    char album_year[5];
+    char d_album_year[5];
+    char album_name[201];
+    char d_album_name[201];
+    char album_artist[201];
+    char d_album_artist[201];
+    char album_genre[101];
+    char d_album_genre[101];
+    char album_art[201];
+    char d_album_art[201];
+    char album_bio[201];
+    char d_album_bio[201];
+    char album_path[201];
+    char d_album_path[201];
+
+    // 1. Extraer datos del body
+    get_music_value(body, "id", id_str, sizeof(id_str));
+
+    get_music_value(body,"album_year", album_year, sizeof(album_year));
+    url_decode(d_album_year, album_year);
+
+    get_music_value(body,"album_name", album_name, sizeof(album_name));
+    url_decode(d_album_name, album_name);
+
+    get_music_value(body,"album_artist", album_artist, sizeof(album_artist));
+    url_decode(d_album_artist, album_artist);
+
+    get_music_value(body,"album_genre", album_genre, sizeof(album_genre));
+    url_decode(d_album_genre, album_genre);
+
+    get_music_value(body,"album_art", album_art, sizeof(album_art));
+    url_decode(d_album_art, album_art);
+
+    get_music_value(body,"album_bio", album_bio, sizeof(album_bio));
+    url_decode(d_album_bio, album_bio);
+
+    get_music_value(body,"album_path", album_path, sizeof(album_path));
+    url_decode(d_album_path, album_path);
+
+
+    int id_a_editar = atoi(id_str);
+
+    if (id_a_editar <= 0 || strlen(d_album_year) == 0 || strlen(d_album_name) == 0 || strlen(album_artist) == 0 || strlen(album_genre) == 0 || strlen(album_art) == 0 || strlen(album_bio) == 0 || strlen(album_path) == 0) {
+        snprintf(error_msg, error_size, "ID ó Algunos de los campos está incompleto");
+        return 0;
+    }
+
+    // 2. VERIFICACIÓN DE EXISTENCIA Y DUPLICADOS EN MEMORIA
+    if (pListMusicLocal != NULL) {
+
+        for (int i = 0; i < pListMusicLocal->len(pListMusicLocal); i++) {
+
+            Music* nMusic = (Music*) pListMusicLocal->get(pListMusicLocal, i);
+
+            // Si el nombre ya existe en otro ID, rebotamos la edición
+            if (nMusic->id != id_a_editar && strcasecmp(nMusic->album_name, d_album_name) == 0) {
+                snprintf(error_msg, error_size, "Error: Album Existente.");
+                return 0;
+            }
+        }
+    }
+
+    // 3. ACTUALIZAR EN BASE DE DATOS (Blindado)
+    if (sp_editar_music(id_a_editar, d_album_year, d_album_name, d_album_artist, d_album_genre, d_album_art, d_album_bio, d_album_path) == 0) {
+        snprintf(error_msg, error_size, "Error al actualizar en la base de datos.");
+        return 0;
+    }
+
+    // 4. ACTUALIZAR EN MEMORIA (ArrayList)
+    if (pListMusicLocal != NULL) {
+
+        for (int i = 0; i < pListMusicLocal->len(pListMusicLocal); i++) {
+
+            Music* nMusic = (Music*) pListMusicLocal->get(pListMusicLocal, i);
+
+            if (nMusic->id == id_a_editar) {
+                // Actualizamos el puntero directamente en la memoria
+                strncpy(nMusic->album_year, d_album_year, sizeof(nMusic->album_year) -1);
+                strncpy(nMusic->album_name, d_album_name, sizeof(nMusic->album_name) -1);
+                strncpy(nMusic->album_artist, d_album_artist, sizeof(nMusic->album_artist) -1);
+                strncpy(nMusic->album_genre, d_album_genre, sizeof(nMusic->album_genre) -1);
+                strncpy(nMusic->album_art, d_album_art, sizeof(nMusic->album_art) -1);
+                strncpy(nMusic->album_bio, d_album_bio, sizeof(nMusic->album_bio) -1);
+                strncpy(nMusic->album_path, d_album_path, sizeof(nMusic->album_path) -1);
+                printf("✅ Memoria sincronizada: Album ID %d actualizado a '%s'.\n", id_a_editar, d_album_name);
+                break;
+            }
+        }
+    }
+
+    return 1;
+
+} // END OF FUNCTION
+
+
+// ===================================================================================================================================== //
+
+// ===================================================================================================================================== //
+// LOGICA QUE RETORNA UN REGISTRO AL SER CONSULTADO POR ID
+// ===================================================================================================================================== //
+int get_music_service_id(const char *body, char *json_out, int out_size) {
+
+    char id_str[10];
+    get_music_value(body, "id", id_str, sizeof(id_str));
+
+    if (strlen(id_str) == 0) {
+        snprintf(json_out, out_size, "{ \"status\": \"error\", \"message\": \"ID no provisto\" }");
+        return 0;
+    }
+
+    char query[512];
+
+    snprintf(query, sizeof(query),
+             "SELECT * FROM mc_music WHERE id = %s LIMIT 1;", id_str);
+
+    DBResult *res = db_query(query);
+
+    // 🔹 CORRECCIÓN AQUÍ: Usamos db_fetch_row o la función correspondiente de tu db.h
+    // Si tu db.h usa mysql_fetch_row directamente:
+    MYSQL_ROW row;
+
+    if (!res || !(row = mysql_fetch_row(res))) {
+        snprintf(json_out, out_size, "{ \"status\": \"error\", \"message\": \"Album no encontrado\" }");
+        if (res) db_free_result(res);
+        return 0;
+    }
+
+    // Construimos el JSON usando los índices del array 'row'
+    snprintf(json_out, out_size,
+             "{ \"id\": %s, \"album_year\": \"%s\", \"album_name\": \"%s\", \"album_artist\": \"%s\", \"album_genre\": \"%s\", \"album_art\": \"%s\", \"album_bio\": \"%s\", \"album_path\": \"%s\" }",
+             row[0] ? row[0] : "0",
+             row[1] ? row[1] : "",
+             row[2] ? row[2] : "",
+             row[3] ? row[3] : "",
+             row[4] ? row[4] : "",
+             row[5] ? row[5] : "",
+             row[6] ? row[6] : "",
+             row[7] ? row[7] : "");
+
+    db_free_result(res);
+    return 1;
+
+} // END OF FUNCTION
+
+
+// ===================================================================================================================================== //
+
+// ===================================================================================================================================== //
+// ROUTES HANDLERS
+// ===================================================================================================================================== //
+
+// ===================================================================================================================================== //
+// Handler POST para el registro
+// ===================================================================================================================================== //
+static void route_post_music(int client, const char *body) {
+
+    char error_msg[256];
+
+    if (music_service_register(body, error_msg, sizeof(error_msg))) {
+        send_response(client, "200 OK", "application/json", "{ \"status\": \"ok\", \"message\": \"Album creado y caché actualizada\" }");
+    } else {
+        char response[512];
+        snprintf(response, sizeof(response), "{ \"status\": \"error\", \"message\": \"%s\" }", error_msg);
+        send_response(client, "400 Bad Request", "application/json", response);
+    }
+
+} // END OF FUNCTION
+
+// ===================================================================================================================================== //
+
+// ===================================================================================================================================== //
+// Handler POST para la edición
+// ===================================================================================================================================== //
+static void route_post_music_edit(int client, const char *body) {
+
+    char error_msg[256];
+
+    if (music_service_edit(body, error_msg, sizeof(error_msg))) {
+        send_response(client, "200 OK", "application/json", "{ \"status\": \"ok\", \"message\": \"Album actualizado correctamente\" }");
+    } else {
+        char response[512];
+        snprintf(response, sizeof(response), "{ \"status\": \"error\", \"message\": \"%s\" }", error_msg);
+        send_response(client, "400 Bad Request", "application/json", response);
+    }
+
+} // END OF FUNCTION
+
+// ===================================================================================================================================== //
+
+
+// ===================================================================================================================================== //
+// ROUTES FOR LIST ALBUNES
+// ===================================================================================================================================== //
+static void route_get_music_list(int client, const char *body) {
+
+
+    // Ahora pListMedicosLocal ya no debería ser NULL
+    if (pListMusicLocal == NULL) {
+        printf("❌ Error crítico: pListMusicLocal sigue siendo NULL en el handler.\n");
+        send_response(client, "500 Internal Error", "application/json", "{\"error\":\"Error de vinculación de memoria\"}");
+        return;
+    }
+
+    // Estimamos el tamaño del JSON (aprox 150 bytes por médico)
+    size_t total_registros = pListMusicLocal->len(pListMusicLocal);
+    size_t buffer_size = (total_registros * 650) + 512;
+    char *json = (char*) calloc(1, buffer_size); // calloc limpia la memoria
+
+    if (json == NULL) {
+        send_response(client, "500 Internal Server Error", "text/plain", "Error de memoria");
+        return;
+    }
+
+    strcpy(json, "[");
+
+    for (int i = 0; i < total_registros; i++) {
+
+        Music* oneMusic = (Music*) pListMusicLocal->get(pListMusicLocal, i);
+
+        char item[600];
+
+        // Armamos el objeto JSON
+        snprintf(item, sizeof(item),
+            "{\"id\": %d, \"album_year\": \"%s\", \"album_name\": \"%s\", \"album_artist\": \"%s\", \"album_genre\": \"%s\", \"album_art\": \"%s\", \"album_bio\": \"%s\", \"album_path\": \"%s\" }%s",
+            oneMusic->id, oneMusic->album_year, oneMusic->album_name, oneMusic->album_artist, oneMusic->album_genre, oneMusic->album_art, oneMusic->album_bio, oneMusic->album_path, (i < total_registros - 1) ? "," : "");
+
+        strcat(json, item);
+    }
+    strcat(json, "]");
+
+    send_response(client, "200 OK", "application/json", json);
+    free(json); // Liberamos el buffer del JSON
+
+
+} // END OF FUNCTION
+
+// ===================================================================================================================================== //
+
+
+// ===================================================================================================================================== //
+// ROUTE OR GET ONE REGESTRY
+// ===================================================================================================================================== //
+static void route_get_music_by_id(int client, const char *body) {
+
+    char response_json[1024];
+
+    if (get_music_service_id(body, response_json, sizeof(response_json))) {
+        send_response(client, "200 OK", "application/json", response_json);
+    } else {
+        send_response(client, "404 Not Found", "application/json", response_json);
+    }
+
+} //END OF FUNCTION
+
+// ===================================================================================================================================== //
+
+// ===================================================================================================================================== //
+// INIT ALL ROUTES ALBUNES
+// ===================================================================================================================================== //
+void init_music_routes() {
+
+    add_route("GET", "/music/list", route_get_music_list); // endpoint para listar
+    add_route("POST", "/music/add", route_post_music); // endpoint para alta de nuevo registro
+    add_route("POST", "/music/edit", route_post_music_edit); // endpoint para editar un registro
+    add_route("POST", "/music/get", route_get_music_by_id); // endpoint para consultar un registro por ID
+
+} // END OF FUNCION
+
+// ===================================================================================================================================== //

@@ -1,4 +1,8 @@
 # ================================================================================================== #
+create table mc_database
+
+
+# ================================================================================================== #
 create table if not exists mc_usuarios(
 id INT AUTO_INCREMENT PRIMARY KEY,
 nombre VARCHAR(50) NOT NULL,
@@ -8,3 +12,31 @@ rol_id int(11) not null
 )ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 select * from mc_usuarios;
+
+# ================================================================================================== #
+
+
+CREATE TABLE IF NOT EXISTS mc_genre (
+  id int(11) AUTO_INCREMENT PRIMARY KEY,
+  genre varchar(100) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+# ================================================================================================== #
+
+
+CREATE TABLE IF NOT EXISTS mc_music(
+  id int(11) AUTO_INCREMENT primary key,
+  album_year varchar(4) NOT NULL,
+  album_name varchar(200) NOT NULL,
+  album_artist varchar(200) NOT NULL,
+  album_genre varchar(100) NOT NULL,
+  album_art varchar(200) DEFAULT NULL,
+  album_bio text DEFAULT NULL,
+  album_path varchar(200) NOT NULL,
+  album_chart int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+select * from mc_music;
+
+# ================================================================================================== #

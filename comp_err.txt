@@ -18,11 +18,11 @@ backend/src/system/users.h:9:13: aviso: ‘route_get_register’ se declaró ‘
 backend/src/system/users.h:10:13: aviso: ‘route_post_register’ se declaró ‘static’ pero nunca se define [-Wunused-function]
    10 | static void route_post_register(int client, const char *body);
       |             ^~~~~~~~~~~~~~~~~~~
-En el fichero incluido desde backend/src/system/routes.c:12:
+En el fichero incluido desde backend/src/system/routes.c:14:
 backend/src/system/session_manager.h:24:13: aviso: ‘trim_string’ se declaró ‘static’ pero nunca se define [-Wunused-function]
    24 | static void trim_string(char *str);
       |             ^~~~~~~~~~~
-En el fichero incluido desde backend/src/system/routes.c:12:
+En el fichero incluido desde backend/src/system/routes.c:14:
 backend/src/system/session_manager.h:52:13: aviso: ‘route_post_set_session_context’ se declaró ‘static’ pero nunca se define [-Wunused-function]
    52 | static void route_post_set_session_context(int client, const char* body);
       |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -83,6 +83,17 @@ backend/src/bussiness/users_service.c:441:14: aviso: se define ‘json_escape’
 backend/src/bussiness/users_service.c:426:13: aviso: se define ‘append_str’ pero no se usa [-Wunused-function]
   426 | static void append_str(char **dest, size_t *size, const char *src) {
       |             ^~~~~~~~~~
+backend/src/bussiness/music_service.c: En la función ‘route_get_music_list’:
+backend/src/bussiness/music_service.c:596:122: aviso: la salida de la directiva ‘", "album_art": "’ podría truncarse al escribir 17 bytes en una región de un tamaño entre 4 y 518 [-Wformat-truncation=]
+  596 |             "{\"id\": %d, \"album_year\": \"%s\", \"album_name\": \"%s\", \"album_artist\": \"%s\", \"album_genre\": \"%s\", \"album_art\": \"%s\", \"album_bio\": \"%s\", \"album_path\": \"%s\" }%s",
+      |                                                                                                                          ^~~~~~~~~~~~~~~~~~~~~
+backend/src/bussiness/music_service.c:595:9: nota: ‘snprintf’ manda 138 o más bytes (se asume 1242) a un destino de tamaño 600
+  595 |         snprintf(item, sizeof(item),
+      |         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  596 |             "{\"id\": %d, \"album_year\": \"%s\", \"album_name\": \"%s\", \"album_artist\": \"%s\", \"album_genre\": \"%s\", \"album_art\": \"%s\", \"album_bio\": \"%s\", \"album_path\": \"%s\" }%s",
+      |             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  597 |             oneMusic->id, oneMusic->album_year, oneMusic->album_name, oneMusic->album_artist, oneMusic->album_genre, oneMusic->album_art, oneMusic->album_bio, oneMusic->album_path, (i < total_registros - 1) ? "," : "");
+      |             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 En el fichero incluido desde backend/src/main.c:10:
 backend/src/system/session_manager.h:24:13: aviso: ‘trim_string’ se declaró ‘static’ pero nunca se define [-Wunused-function]
    24 | static void trim_string(char *str);

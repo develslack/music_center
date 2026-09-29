@@ -45,7 +45,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Verificar si existe un usuario en sesión
   const user = JSON.parse(localStorage.getItem("user"));
-  console.log(user);
+  //console.log(user);
 
   if (!user) {
     console.warn("⚠️ No hay sesión activa, redirigiendo al inicio de sesión...");
@@ -109,23 +109,40 @@ document.addEventListener("DOMContentLoaded", () => {
                                                         <div class="panel-heading">
                                                             <h4 class="panel-title">
                                                             <a data-toggle="collapse" data-parent="#accordion" href="#collapse2">
-                                                                <span class="glyphicon glyphicon-circle-arrow-down" aria-hidden="true"></span> Carga de Lotes</a></h4>
+                                                                <span class="glyphicon glyphicon-search" aria-hidden="true"></span> Búsquedas</a></h4>
                                                         </div>
                                                         <div id="collapse2" class="panel-collapse collapse">
                                                             <div class="panel-body">
                                                                 <div class="list-group">
-                                                                <a href="#" class="list-group-item" id="link-parametros_basicos" data-toggle="tooltip" title="Cargar Parámetros Básicos">
-                                                                    <span class="glyphicon glyphicon-th-large" aria-hidden="true"></span> Parámetros Básicos</a>
-                                                                <a href="#" class="list-group-item" id="link-ch" data-toggle="tooltip" title="Listar CH">
-                                                                    <span class="glyphicon glyphicon-th-large" aria-hidden="true"></span> CH (Cabezal de Haberes)</a>
-                                                                <a href="#" class="list-group-item" id="link-dp" data-toggle="tooltip" title="Listar DP">
-                                                                    <span class="glyphicon glyphicon-th-large" aria-hidden="true"></span> DP (Datos de Personal)</a>
-                                                                <a href="#" class="list-group-item" id="link-lh1" data-toggle="tooltip" title="Listar LH1">
-                                                                    <span class="glyphicon glyphicon-th-large" aria-hidden="true"></span> LH1 (Liquidación de Haberes 1)</a>
-                                                                <a href="#" class="list-group-item" id="link-lh2" data-toggle="tooltip" title="Listar LH2">
-                                                                    <span class="glyphicon glyphicon-th-large" aria-hidden="true"></span> LH2 (Liquidación de Haberes 2)</a>
-                                                                <a href="#" class="list-group-item" id="link-administracion_lotes" data-toggle="tooltip" title="Administración de Lotes">
-                                                                    <span class="glyphicon glyphicon-cog" aria-hidden="true"></span> Administración de Lotes</a>
+
+                                                                <form class="list-group-item" id="form_search_by_artist">
+                                                                    <div class="input-group">
+                                                                        <input type="text" class="form-control" id="artista" placeholder="Búsqueda por Artista">
+                                                                        <div class="input-group-btn">
+                                                                        <button class="btn btn-default" type="submit">
+                                                                            <i class="glyphicon glyphicon-search"></i>
+                                                                        </button>
+                                                                        </div>
+                                                                    </div>
+                                                                </form>
+
+                                                                <form class="list-group-item" id="form_search_by_genre">
+                                                                    <div class="input-group">
+                                                                        <div class="form-group">
+                                                                            <select class="form-control" id="genres" required style="font-weight: bold;">
+                                                                            <option value="">Cargando Géneros Musicales...</option>
+                                                                            </select>
+                                                                         </div>
+
+                                                                        <div class="input-group-btn">
+                                                                        <button class="btn btn-default" type="submit">
+                                                                            <i class="glyphicon glyphicon-search"></i>
+                                                                        </button>
+                                                                        </div>
+                                                                    </div>
+                                                                </form>
+
+
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -140,8 +157,8 @@ document.addEventListener("DOMContentLoaded", () => {
                                                         <div id="collapse3" class="panel-collapse collapse">
                                                             <div class="panel-body">
                                                                 <div class="list-group">
-                                                                <a href="#" class="list-group-item" id="link-tablas_maestro" data-toggle="tooltip" title="Listar Tablas Maestro">
-                                                                    <span class="glyphicon glyphicon-star" aria-hidden="true"></span> Tablas Maestro</a>
+                                                                <a href="#" class="list-group-item" id="link-generos" data-toggle="tooltip" title="Listar Géneros Músicales">
+                                                                    <span class="glyphicon glyphicon-music" aria-hidden="true"></span> Géneros Musicales</a>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -160,6 +177,8 @@ document.addEventListener("DOMContentLoaded", () => {
     // Inyectar contenido en el contenedor
     const dashNav = document.getElementById("navBar");
     dashNav.innerHTML = navBar;
+
+    cargarComboGenerosMusicales(); // POBLAMOS EL SELECT DE GENEROS MUSICALES
 
     // 🛡️ ADUANA VISUAL: Ocultamos estéticamente las opciones administrativas del menú a los no-admins
     if (parseInt(user.rol_id) !== 1) {
@@ -277,6 +296,14 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // ======================================================================================================================== //
+  // ESPACIO DE GENEROS MUSICALES //
+  // ======================================================================================================================== //
+  document.getElementById("link-generos")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    loadDashboardView(window.VIEWS_PATH + "/generos/generos.html");
+  });
+
+  // ======================================================================================================================== //
   // FUNCIÓN CENTRAL DESPACHADORA CON ADUANA PERIMETRAL (KERNEL-ROUTE-FIREWALL)
   // ======================================================================================================================== //
   async function loadDashboardView(viewPath) {
@@ -338,6 +365,9 @@ document.addEventListener("DOMContentLoaded", () => {
       else if (viewPath.includes("roles")) {
         loadDashboardScript("/js/roles.js");
       }
+      else if (viewPath.includes("generos")) {
+        loadDashboardScript("/js/generos.js");
+      }
 
       // 🔥 TRASPASO AUTOMÁTICO DE CONTEXTO: Sincroniza y bloquea los campos de control en la vista inyectada
       setTimeout(() => {
@@ -380,6 +410,31 @@ function loadDashboardScript(src) {
   // ✅ Exportar globalmente para que otros scripts lo usen
   window.loadDashboardView = loadDashboardView;
 });
+
+// ====================================================================================================================== //
+
+async function cargarComboGenerosMusicales(valorSeleccionado) {
+    const select = document.getElementById("genres");
+    if (!select) return;
+
+    try {
+        const resp = await fetch(window.API_BASE_URL +"/genres/list");
+        const lista = await resp.json();
+
+        select.innerHTML = `<option value="">Seleccionar</option>`;
+        lista.forEach(item => {
+            const genre = item.genre ? item.genre.trim() : "";
+            const opt = document.createElement("option");
+            opt.value = genre;
+            opt.textContent = `${genre}`;
+            if (genre == valorSeleccionado) opt.selected = true;
+            select.appendChild(opt);
+        });
+    } catch (err) {
+        console.error("Error al cargar Géneros Musicales:", err);
+        select.innerHTML = `<option value="">Seleccionar</option>`;
+    }
+}
 
 
 
