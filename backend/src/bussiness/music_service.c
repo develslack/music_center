@@ -1,8 +1,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdint.h>
 #include <openssl/sha.h>
 #include <mysql/mysql.h>
+#include <unistd.h>
+#include <sys/stat.h>
 #include "../system/hash.h"
 #include "../system/routes.h"
 #include "../system/db.h"
@@ -111,9 +114,30 @@ static void get_music_value(const char *body, const char *key, char *out, size_t
 
 } // END OF FUNCTION
 
-
 // ===================================================================================================================================== //
+// FUNCIÓN AUXILIAR: Codificador Base64 para incrustar binarios en JSON
+// ===================================================================================================================================== //
+static const char b64_table[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
+static char *base64_encode(const unsigned char *data, size_t input_length, size_t *output_length) {
+    *output_length = 4 * ((input_length + 2) / 3);
+    char *encoded_data = (char *)malloc(*output_length + 1);
+    if (!encoded_data) return NULL;
+
+    for (size_t i = 0, j = 0; i < input_length;) {
+        uint32_t octet_a = i < input_length ? data[i++] : 0;
+        uint32_t octet_b = i < input_length ? data[i++] : 0;
+        uint32_t octet_c = i < input_length ? data[i++] : 0;
+        uint32_t triple = (octet_a << 16) + (octet_b << 8) + octet_c;
+
+        encoded_data[j++] = b64_table[(triple >> 18) & 0x3F];
+        encoded_data[j++] = b64_table[(triple >> 12) & 0x3F];
+        encoded_data[j++] = (i > input_length + 1) ? '=' : b64_table[(triple >> 6) & 0x3F];
+        encoded_data[j++] = (i > input_length) ? '=' : b64_table[triple & 0x3F];
+    }
+    encoded_data[*output_length] = '\0';
+    return encoded_data;
+}
 
 // ===================================================================================================================================== //
 // 🔒 STORED PROCEDURES: Prepared Statements (GENEROS)
@@ -164,7 +188,6 @@ static int sp_insertar_music(const char* album_year, const char* album_name, con
     bind_param[6].buffer = (char *)album_path;
     bind_param[6].buffer_length = strlen(album_path);
 
-
     if (mysql_stmt_bind_param(stmt, bind_param) || mysql_stmt_execute(stmt)) {
         mysql_stmt_close(stmt);
         mysql_close(conn);
@@ -191,11 +214,7 @@ static int sp_insertar_music(const char* album_year, const char* album_name, con
 
 } // END OF FUNCTION
 
-
 // ===================================================================================================================================== //
-
-// ===================================================================================================================================== //
-
 
 static int sp_editar_music(int id, const char* album_year, const char* album_name, const char* album_artist, const char* album_genre, const char* album_art, const char* album_bio, const char* album_path){
 
@@ -245,7 +264,6 @@ static int sp_editar_music(int id, const char* album_year, const char* album_nam
     bind_param[7].buffer_type = MYSQL_TYPE_STRING;
     bind_param[7].buffer = (char *)album_path;
     bind_param[7].buffer_length = strlen(album_path);
-
 
     if (mysql_stmt_bind_param(stmt, bind_param) || mysql_stmt_execute(stmt)) {
         mysql_stmt_close(stmt);
@@ -303,29 +321,20 @@ int music_service_register(const char *body, char *error_msg, int error_size) {
     get_music_value(body,"album_path", album_path, sizeof(album_path));
     url_decode(d_album_path, album_path);
 
-
     if (strlen(d_album_year) == 0 || strlen(d_album_name) == 0 || strlen(album_artist) == 0 || strlen(album_genre) == 0 || strlen(album_art) == 0 || strlen(album_bio) == 0 || strlen(album_path) == 0) {
         snprintf(error_msg, error_size, "Hay campos sin completar.");
         return 0;
     }
 
-    // 1. VERIFICACIÓN DE DUPLICADOS EN MEMORIA (ArrayList)
-    // Es más rápido que consultar la DB nuevamente
     if (pListMusicLocal != NULL) {
-
         for (int i = 0; i < pListMusicLocal->len(pListMusicLocal); i++) {
-
             Music* nMusic = (Music*) pListMusicLocal->get(pListMusicLocal, i);
-
             if (strcasecmp(nMusic->album_name, d_album_name) == 0) {
-
                 snprintf(error_msg, error_size, "Error: Album '%s' existente.", d_album_name);
                 return 0;
             }
         }
     }
-
-    // 2. INSERCIÓN EN BASE DE DATOS
 
     int nuevo_id = sp_insertar_music(d_album_year, d_album_name, d_album_artist, d_album_genre, d_album_art, d_album_bio, d_album_path);
 
@@ -337,20 +346,16 @@ int music_service_register(const char *body, char *error_msg, int error_size) {
     Music* nuevoMusic = newMusic();
 
     if (nuevoMusic) {
-
-        // Aprovechamos para inicializar el bloque de memoria limpio
         memset(nuevoMusic, 0, sizeof(Music));
-
         nuevoMusic->id = nuevo_id;
-        strncpy(nuevoMusic->album_year, d_album_year, sizeof(nuevoMusic->album_year) -1);
-        strncpy(nuevoMusic->album_name, d_album_name, sizeof(nuevoMusic->album_name) -1);
-        strncpy(nuevoMusic->album_artist, d_album_artist, sizeof(nuevoMusic->album_artist) -1);
-        strncpy(nuevoMusic->album_genre, d_album_genre, sizeof(nuevoMusic->album_genre) -1);
-        strncpy(nuevoMusic->album_art, d_album_art, sizeof(nuevoMusic->album_art) -1);
-        strncpy(nuevoMusic->album_bio, d_album_bio, sizeof(nuevoMusic->album_bio) -1);
-        strncpy(nuevoMusic->album_path, d_album_path, sizeof(nuevoMusic->album_path) -1);
+        strncpy(nuevoMusic->album_year, d_album_year, sizeof(nuevoMusic->album_year) - 1);
+        strncpy(nuevoMusic->album_name, d_album_name, sizeof(nuevoMusic->album_name) - 1);
+        strncpy(nuevoMusic->album_artist, d_album_artist, sizeof(nuevoMusic->album_artist) - 1);
+        strncpy(nuevoMusic->album_genre, d_album_genre, sizeof(nuevoMusic->album_genre) - 1);
+        strncpy(nuevoMusic->album_art, d_album_art, sizeof(nuevoMusic->album_art) - 1);
+        strncpy(nuevoMusic->album_bio, d_album_bio, sizeof(nuevoMusic->album_bio) - 1);
+        strncpy(nuevoMusic->album_path, d_album_path, sizeof(nuevoMusic->album_path) - 1);
 
-        // Sincronizamos el ArrayList inmediatamente
         pListMusicLocal->add(pListMusicLocal, nuevoMusic);
 
         printf("✅ Sincronización exitosa: Album '%s' (ID: %d) añadido a RAM.\n",
@@ -360,7 +365,6 @@ int music_service_register(const char *body, char *error_msg, int error_size) {
     return 1;
 
 } // END OF FUNCTION
-
 
 // ===================================================================================================================================== //
 
@@ -385,7 +389,6 @@ int music_service_edit(const char *body, char *error_msg, int error_size) {
     char album_path[201];
     char d_album_path[201];
 
-    // 1. Extraer datos del body
     get_music_value(body, "id", id_str, sizeof(id_str));
 
     get_music_value(body,"album_year", album_year, sizeof(album_year));
@@ -409,7 +412,6 @@ int music_service_edit(const char *body, char *error_msg, int error_size) {
     get_music_value(body,"album_path", album_path, sizeof(album_path));
     url_decode(d_album_path, album_path);
 
-
     int id_a_editar = atoi(id_str);
 
     if (id_a_editar <= 0 || strlen(d_album_year) == 0 || strlen(d_album_name) == 0 || strlen(album_artist) == 0 || strlen(album_genre) == 0 || strlen(album_art) == 0 || strlen(album_bio) == 0 || strlen(album_path) == 0) {
@@ -417,14 +419,9 @@ int music_service_edit(const char *body, char *error_msg, int error_size) {
         return 0;
     }
 
-    // 2. VERIFICACIÓN DE EXISTENCIA Y DUPLICADOS EN MEMORIA
     if (pListMusicLocal != NULL) {
-
         for (int i = 0; i < pListMusicLocal->len(pListMusicLocal); i++) {
-
             Music* nMusic = (Music*) pListMusicLocal->get(pListMusicLocal, i);
-
-            // Si el nombre ya existe en otro ID, rebotamos la edición
             if (nMusic->id != id_a_editar && strcasecmp(nMusic->album_name, d_album_name) == 0) {
                 snprintf(error_msg, error_size, "Error: Album Existente.");
                 return 0;
@@ -432,28 +429,22 @@ int music_service_edit(const char *body, char *error_msg, int error_size) {
         }
     }
 
-    // 3. ACTUALIZAR EN BASE DE DATOS (Blindado)
     if (sp_editar_music(id_a_editar, d_album_year, d_album_name, d_album_artist, d_album_genre, d_album_art, d_album_bio, d_album_path) == 0) {
         snprintf(error_msg, error_size, "Error al actualizar en la base de datos.");
         return 0;
     }
 
-    // 4. ACTUALIZAR EN MEMORIA (ArrayList)
     if (pListMusicLocal != NULL) {
-
         for (int i = 0; i < pListMusicLocal->len(pListMusicLocal); i++) {
-
             Music* nMusic = (Music*) pListMusicLocal->get(pListMusicLocal, i);
-
             if (nMusic->id == id_a_editar) {
-                // Actualizamos el puntero directamente en la memoria
-                strncpy(nMusic->album_year, d_album_year, sizeof(nMusic->album_year) -1);
-                strncpy(nMusic->album_name, d_album_name, sizeof(nMusic->album_name) -1);
-                strncpy(nMusic->album_artist, d_album_artist, sizeof(nMusic->album_artist) -1);
-                strncpy(nMusic->album_genre, d_album_genre, sizeof(nMusic->album_genre) -1);
-                strncpy(nMusic->album_art, d_album_art, sizeof(nMusic->album_art) -1);
-                strncpy(nMusic->album_bio, d_album_bio, sizeof(nMusic->album_bio) -1);
-                strncpy(nMusic->album_path, d_album_path, sizeof(nMusic->album_path) -1);
+                strncpy(nMusic->album_year, d_album_year, sizeof(nMusic->album_year) - 1);
+                strncpy(nMusic->album_name, d_album_name, sizeof(nMusic->album_name) - 1);
+                strncpy(nMusic->album_artist, d_album_artist, sizeof(nMusic->album_artist) - 1);
+                strncpy(nMusic->album_genre, d_album_genre, sizeof(nMusic->album_genre) - 1);
+                strncpy(nMusic->album_art, d_album_art, sizeof(nMusic->album_art) - 1);
+                strncpy(nMusic->album_bio, d_album_bio, sizeof(nMusic->album_bio) - 1);
+                strncpy(nMusic->album_path, d_album_path, sizeof(nMusic->album_path) - 1);
                 printf("✅ Memoria sincronizada: Album ID %d actualizado a '%s'.\n", id_a_editar, d_album_name);
                 break;
             }
@@ -463,7 +454,6 @@ int music_service_edit(const char *body, char *error_msg, int error_size) {
     return 1;
 
 } // END OF FUNCTION
-
 
 // ===================================================================================================================================== //
 
@@ -481,14 +471,9 @@ int get_music_service_id(const char *body, char *json_out, int out_size) {
     }
 
     char query[512];
-
-    snprintf(query, sizeof(query),
-             "SELECT * FROM mc_music WHERE id = %s LIMIT 1;", id_str);
+    snprintf(query, sizeof(query), "SELECT * FROM mc_music WHERE id = %s LIMIT 1;", id_str);
 
     DBResult *res = db_query(query);
-
-    // 🔹 CORRECCIÓN AQUÍ: Usamos db_fetch_row o la función correspondiente de tu db.h
-    // Si tu db.h usa mysql_fetch_row directamente:
     MYSQL_ROW row;
 
     if (!res || !(row = mysql_fetch_row(res))) {
@@ -497,7 +482,6 @@ int get_music_service_id(const char *body, char *json_out, int out_size) {
         return 0;
     }
 
-    // Construimos el JSON usando los índices del array 'row'
     snprintf(json_out, out_size,
              "{ \"id\": %s, \"album_year\": \"%s\", \"album_name\": \"%s\", \"album_artist\": \"%s\", \"album_genre\": \"%s\", \"album_art\": \"%s\", \"album_bio\": \"%s\", \"album_path\": \"%s\" }",
              row[0] ? row[0] : "0",
@@ -514,16 +498,11 @@ int get_music_service_id(const char *body, char *json_out, int out_size) {
 
 } // END OF FUNCTION
 
-
-// ===================================================================================================================================== //
-
 // ===================================================================================================================================== //
 // ROUTES HANDLERS
 // ===================================================================================================================================== //
 
-// ===================================================================================================================================== //
 // Handler POST para el registro
-// ===================================================================================================================================== //
 static void route_post_music(int client, const char *body) {
 
     char error_msg[256];
@@ -540,9 +519,7 @@ static void route_post_music(int client, const char *body) {
 
 // ===================================================================================================================================== //
 
-// ===================================================================================================================================== //
 // Handler POST para la edición
-// ===================================================================================================================================== //
 static void route_post_music_edit(int client, const char *body) {
 
     char error_msg[256];
@@ -559,24 +536,18 @@ static void route_post_music_edit(int client, const char *body) {
 
 // ===================================================================================================================================== //
 
-
-// ===================================================================================================================================== //
 // ROUTES FOR LIST ALBUNES
-// ===================================================================================================================================== //
 static void route_get_music_list(int client, const char *body) {
 
-
-    // Ahora pListMedicosLocal ya no debería ser NULL
     if (pListMusicLocal == NULL) {
         printf("❌ Error crítico: pListMusicLocal sigue siendo NULL en el handler.\n");
         send_response(client, "500 Internal Error", "application/json", "{\"error\":\"Error de vinculación de memoria\"}");
         return;
     }
 
-    // Estimamos el tamaño del JSON (aprox 150 bytes por médico)
     size_t total_registros = pListMusicLocal->len(pListMusicLocal);
     size_t buffer_size = (total_registros * 650) + 512;
-    char *json = (char*) calloc(1, buffer_size); // calloc limpia la memoria
+    char *json = (char*) calloc(1, buffer_size);
 
     if (json == NULL) {
         send_response(client, "500 Internal Server Error", "text/plain", "Error de memoria");
@@ -588,10 +559,8 @@ static void route_get_music_list(int client, const char *body) {
     for (int i = 0; i < total_registros; i++) {
 
         Music* oneMusic = (Music*) pListMusicLocal->get(pListMusicLocal, i);
-
         char item[600];
 
-        // Armamos el objeto JSON
         snprintf(item, sizeof(item),
             "{\"id\": %d, \"album_year\": \"%s\", \"album_name\": \"%s\", \"album_artist\": \"%s\", \"album_genre\": \"%s\", \"album_art\": \"%s\", \"album_bio\": \"%s\", \"album_path\": \"%s\" }%s",
             oneMusic->id, oneMusic->album_year, oneMusic->album_name, oneMusic->album_artist, oneMusic->album_genre, oneMusic->album_art, oneMusic->album_bio, oneMusic->album_path, (i < total_registros - 1) ? "," : "");
@@ -601,17 +570,13 @@ static void route_get_music_list(int client, const char *body) {
     strcat(json, "]");
 
     send_response(client, "200 OK", "application/json", json);
-    free(json); // Liberamos el buffer del JSON
-
+    free(json);
 
 } // END OF FUNCTION
 
 // ===================================================================================================================================== //
 
-
-// ===================================================================================================================================== //
-// ROUTE OR GET ONE REGESTRY
-// ===================================================================================================================================== //
+// ROUTE FOR GET ONE REGISTRY
 static void route_get_music_by_id(int client, const char *body) {
 
     char response_json[1024];
@@ -622,20 +587,118 @@ static void route_get_music_by_id(int client, const char *body) {
         send_response(client, "404 Not Found", "application/json", response_json);
     }
 
-} //END OF FUNCTION
+} // END OF FUNCTION
 
 // ===================================================================================================================================== //
+// ROUTE POST: Obtener portada del álbum en Base64 (Data URL para etiqueta <img>)
+// ===================================================================================================================================== //
+static void route_post_music_art(int client, const char *body) {
+
+    char id_str[16] = {0};
+    get_music_value(body, "id", id_str, sizeof(id_str));
+
+    int album_id = atoi(id_str);
+    if (album_id <= 0 || pListMusicLocal == NULL) {
+        send_response(client, "400 Bad Request", "application/json", "{\"status\":\"error\",\"message\":\"ID invalido\"}");
+        return;
+    }
+
+    char raw_art_path[256] = {0};
+    for (int i = 0; i < pListMusicLocal->len(pListMusicLocal); i++) {
+        Music *m = (Music *)pListMusicLocal->get(pListMusicLocal, i);
+        if (m->id == album_id) {
+            strncpy(raw_art_path, m->album_art, sizeof(raw_art_path) - 1);
+            break;
+        }
+    }
+
+    if (strlen(raw_art_path) == 0) {
+        send_response(client, "404 Not Found", "application/json", "{\"status\":\"error\",\"message\":\"Registro sin imagen\"}");
+        return;
+    }
+
+    // Extraer únicamente el nombre base del archivo ignorando prefijos de rutas
+    const char *clean_name = raw_art_path;
+    const char *pos = strstr(raw_art_path, "art/");
+    if (pos) {
+        clean_name = pos + 4; // Salta "art/"
+    }
+
+    // Probar las 3 posibles rutas relativas según el directorio donde se lanzó el binario
+    char file_disk_path[512];
+    FILE *f = NULL;
+
+    // 1. Probar ../art/ (ejecutado desde bin/)
+    snprintf(file_disk_path, sizeof(file_disk_path), "../art/%s", clean_name);
+    f = fopen(file_disk_path, "rb");
+
+    // 2. Si no abre, probar art/ (ejecutado desde backend/)
+    if (!f) {
+        snprintf(file_disk_path, sizeof(file_disk_path), "art/%s", clean_name);
+        f = fopen(file_disk_path, "rb");
+    }
+
+    // 3. Si no abre, probar backend/art/ (ejecutado desde la raiz del proyecto)
+    if (!f) {
+        snprintf(file_disk_path, sizeof(file_disk_path), "backend/art/%s", clean_name);
+        f = fopen(file_disk_path, "rb");
+    }
+
+    if (!f) {
+        printf("🚨 [ART] No se encontro '%s' en ninguna ruta de disco.\n", clean_name);
+        send_response(client, "404 Not Found", "application/json", "{\"status\":\"error\",\"message\":\"Archivo no encontrado en disco\"}");
+        return;
+    }
+
+    fseek(f, 0, SEEK_END);
+    long file_size = ftell(f);
+    fseek(f, 0, SEEK_SET);
+
+    unsigned char *file_buffer = (unsigned char *)malloc(file_size);
+    if (!file_buffer) {
+        fclose(f);
+        send_response(client, "500 Internal Error", "application/json", "{\"status\":\"error\",\"message\":\"Error de memoria RAM\"}");
+        return;
+    }
+
+    fread(file_buffer, 1, file_size, f);
+    fclose(f);
+
+    size_t out_len = 0;
+    char *b64_data = base64_encode(file_buffer, file_size, &out_len);
+    free(file_buffer);
+
+    if (!b64_data) {
+        send_response(client, "500 Internal Error", "application/json", "{\"status\":\"error\",\"message\":\"Error al codificar imagen\"}");
+        return;
+    }
+
+    const char *mime = "image/jpeg";
+    if (strstr(clean_name, ".png") || strstr(clean_name, ".PNG")) {
+        mime = "image/png";
+    }
+
+    size_t json_size = out_len + 256;
+    char *json_res = (char *)malloc(json_size);
+    snprintf(json_res, json_size, "{\"status\":\"ok\",\"mime\":\"%s\",\"data\":\"data:%s;base64,%s\"}", mime, mime, b64_data);
+
+    send_response(client, "200 OK", "application/json", json_res);
+
+    free(b64_data);
+    free(json_res);
+
+} // END OF FUNCTION
 
 // ===================================================================================================================================== //
 // INIT ALL ROUTES ALBUNES
 // ===================================================================================================================================== //
 void init_music_routes() {
 
-    add_route("GET", "/music/list", route_get_music_list); // endpoint para listar
-    add_route("POST", "/music/add", route_post_music); // endpoint para alta de nuevo registro
-    add_route("POST", "/music/edit", route_post_music_edit); // endpoint para editar un registro
-    add_route("POST", "/music/get", route_get_music_by_id); // endpoint para consultar un registro por ID
+    add_route("GET",  "/music/list", route_get_music_list);    // Listado de álbumes
+    add_route("POST", "/music/add",  route_post_music);        // Alta de nuevo álbum
+    add_route("POST", "/music/edit", route_post_music_edit);    // Edición de álbum
+    add_route("POST", "/music/get",  route_get_music_by_id);    // Consulta por ID
+    add_route("POST", "/music/art",  route_post_music_art);    // Despacho de portada Base64
 
-} // END OF FUNCION
-
+} // END OF FUNCTION
 // ===================================================================================================================================== //

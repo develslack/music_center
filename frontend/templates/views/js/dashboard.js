@@ -104,49 +104,47 @@ document.addEventListener("DOMContentLoaded", () => {
                                                         </div>
                                                     </div>
 
-                                                    <!-- Menú 2: Carga de Lotes (Público) -->
-                                                    <div class="panel panel-default">
-                                                        <div class="panel-heading">
-                                                            <h4 class="panel-title">
-                                                            <a data-toggle="collapse" data-parent="#accordion" href="#collapse2">
-                                                                <span class="glyphicon glyphicon-search" aria-hidden="true"></span> Búsquedas</a></h4>
-                                                        </div>
-                                                        <div id="collapse2" class="panel-collapse collapse">
-                                                            <div class="panel-body">
-                                                                <div class="list-group">
+                                                    <!-- Menú 2: Búsquedas -->
+                                                        <div class="panel panel-default">
+                                                            <div class="panel-heading">
+                                                                <h4 class="panel-title">
+                                                                <a data-toggle="collapse" data-parent="#accordion" href="#collapse2">
+                                                                    <span class="glyphicon glyphicon-search" aria-hidden="true"></span> Búsquedas</a></h4>
+                                                            </div>
+                                                            <div id="collapse2" class="panel-collapse collapse in">
+                                                                <div class="panel-body">
+                                                                    <div class="list-group">
 
-                                                                <form class="list-group-item" id="form_search_by_artist">
-                                                                    <div class="input-group">
-                                                                        <input type="text" class="form-control" id="artista" placeholder="Búsqueda por Artista">
-                                                                        <div class="input-group-btn">
-                                                                        <button class="btn btn-default" type="submit">
-                                                                            <i class="glyphicon glyphicon-search"></i>
-                                                                        </button>
+                                                                    <!-- Búsqueda por Artista -->
+                                                                    <form class="list-group-item" id="form_search_by_artist">
+                                                                        <div class="input-group">
+                                                                            <input type="text" class="form-control" id="artista" placeholder="Búsqueda por Artista">
+                                                                            <div class="input-group-btn">
+                                                                                <button class="btn btn-default" type="submit" title="Buscar por Artista">
+                                                                                    <i class="glyphicon glyphicon-search"></i>
+                                                                                </button>
+                                                                            </div>
                                                                         </div>
-                                                                    </div>
-                                                                </form>
+                                                                    </form>
 
-                                                                <form class="list-group-item" id="form_search_by_genre">
-                                                                    <div class="input-group">
-                                                                        <div class="form-group">
-                                                                            <select class="form-control" id="genres" required style="font-weight: bold;">
-                                                                            <option value="">Cargando Géneros Musicales...</option>
+                                                                    <!-- Búsqueda por Género -->
+                                                                    <form class="list-group-item" id="form_search_by_genre">
+                                                                        <div class="input-group">
+                                                                            <select class="form-control" id="genres" style="font-weight: bold;">
+                                                                                <option value="">-- Todos los Géneros --</option>
                                                                             </select>
-                                                                         </div>
-
-                                                                        <div class="input-group-btn">
-                                                                        <button class="btn btn-default" type="submit">
-                                                                            <i class="glyphicon glyphicon-search"></i>
-                                                                        </button>
+                                                                            <div class="input-group-btn">
+                                                                                <button class="btn btn-default" type="submit" title="Filtrar por Género">
+                                                                                    <i class="glyphicon glyphicon-search"></i>
+                                                                                </button>
+                                                                            </div>
                                                                         </div>
+                                                                    </form>
+
                                                                     </div>
-                                                                </form>
-
-
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                    </div>
 
                                                     <!-- Menú 3: Tablas Maestro (Solo Admin) -->
                                                     <div class="panel panel-default" id="menu-maestros-container">
@@ -180,6 +178,45 @@ document.addEventListener("DOMContentLoaded", () => {
 
     cargarComboGenerosMusicales(); // POBLAMOS EL SELECT DE GENEROS MUSICALES
 
+    // -------------------------------------------------------------------------
+    // BÚSQUEDAS: ARTISTA Y GÉNERO
+    // -------------------------------------------------------------------------
+    window.albumFilter = null; // Variable global para transportar el filtro
+
+    function ejecutarFiltroAlbums(tipo, valor) {
+      window.albumFilter = { tipo: tipo, valor: valor ? valor.trim() : "" };
+
+      // Si la tabla ya está en el DOM con su DataTable inicializado, filtramos directo
+      if (window.dTable && typeof window.filtrarTablaAlbums === "function") {
+          window.filtrarTablaAlbums(window.albumFilter.tipo, window.albumFilter.valor);
+      } else {
+          // Si estamos en otra vista (home, etc.), cargamos primero la vista de álbumes
+          loadDashboardView(window.VIEWS_PATH + "/albums/albums.html");
+      }
+    }
+
+    // 1. Búsqueda por Artista (si viene en blanco, pasa cadena vacía y limpia el filtro)
+    const formArtist = document.getElementById("form_search_by_artist");
+    if (formArtist) {
+      formArtist.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const artistaVal = document.getElementById("artista").value;
+        ejecutarFiltroAlbums("artista", artistaVal);
+      });
+    }
+
+    // 2. Búsqueda por Género
+    const formGenre = document.getElementById("form_search_by_genre");
+    if (formGenre) {
+      formGenre.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const generoVal = document.getElementById("genres").value;
+        ejecutarFiltroAlbums("genero", generoVal);
+      });
+    }
+
+    // ============================================================================================================================== //
+
     // 🛡️ ADUANA VISUAL: Ocultamos estéticamente las opciones administrativas del menú a los no-admins
     if (parseInt(user.rol_id) !== 1) {
         const menuSistema = document.getElementById("menu-sistema-container");
@@ -205,6 +242,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // ============================================================================================================================== //
 
   // Acción de logout
   const logoutBtn = document.getElementById("dashboard-logout");
@@ -368,6 +406,9 @@ document.addEventListener("DOMContentLoaded", () => {
       else if (viewPath.includes("generos")) {
         loadDashboardScript("/js/generos.js");
       }
+      else if (viewPath.includes("albums")) {
+        loadDashboardScript("/js/albums.js");
+      }
 
       // 🔥 TRASPASO AUTOMÁTICO DE CONTEXTO: Sincroniza y bloquea los campos de control en la vista inyectada
       setTimeout(() => {
@@ -413,26 +454,27 @@ function loadDashboardScript(src) {
 
 // ====================================================================================================================== //
 
-async function cargarComboGenerosMusicales(valorSeleccionado) {
+async function cargarComboGenerosMusicales(valorSeleccionado = "") {
     const select = document.getElementById("genres");
     if (!select) return;
 
     try {
-        const resp = await fetch(window.API_BASE_URL +"/genres/list");
+        const resp = await fetch(window.API_BASE_URL + "/genres/list");
         const lista = await resp.json();
 
-        select.innerHTML = `<option value="">Seleccionar</option>`;
+        select.innerHTML = `<option value="">-- Todos los Géneros --</option>`;
         lista.forEach(item => {
             const genre = item.genre ? item.genre.trim() : "";
+            if (!genre) return;
             const opt = document.createElement("option");
             opt.value = genre;
-            opt.textContent = `${genre}`;
-            if (genre == valorSeleccionado) opt.selected = true;
+            opt.textContent = genre;
+            if (genre === valorSeleccionado) opt.selected = true;
             select.appendChild(opt);
         });
     } catch (err) {
-        console.error("Error al cargar Géneros Musicales:", err);
-        select.innerHTML = `<option value="">Seleccionar</option>`;
+        console.error("Error al cargar Géneros Musicales en el sidebar:", err);
+        select.innerHTML = `<option value="">-- Error cargando géneros --</option>`;
     }
 }
 

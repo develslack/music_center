@@ -18,11 +18,11 @@ backend/src/system/users.h:9:13: aviso: ‘route_get_register’ se declaró ‘
 backend/src/system/users.h:10:13: aviso: ‘route_post_register’ se declaró ‘static’ pero nunca se define [-Wunused-function]
    10 | static void route_post_register(int client, const char *body);
       |             ^~~~~~~~~~~~~~~~~~~
-En el fichero incluido desde backend/src/system/routes.c:14:
+En el fichero incluido desde backend/src/system/routes.c:16:
 backend/src/system/session_manager.h:24:13: aviso: ‘trim_string’ se declaró ‘static’ pero nunca se define [-Wunused-function]
    24 | static void trim_string(char *str);
       |             ^~~~~~~~~~~
-En el fichero incluido desde backend/src/system/routes.c:14:
+En el fichero incluido desde backend/src/system/routes.c:16:
 backend/src/system/session_manager.h:52:13: aviso: ‘route_post_set_session_context’ se declaró ‘static’ pero nunca se define [-Wunused-function]
    52 | static void route_post_set_session_context(int client, const char* body);
       |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -84,16 +84,53 @@ backend/src/bussiness/users_service.c:426:13: aviso: se define ‘append_str’ 
   426 | static void append_str(char **dest, size_t *size, const char *src) {
       |             ^~~~~~~~~~
 backend/src/bussiness/music_service.c: En la función ‘route_get_music_list’:
-backend/src/bussiness/music_service.c:596:122: aviso: la salida de la directiva ‘", "album_art": "’ podría truncarse al escribir 17 bytes en una región de un tamaño entre 4 y 518 [-Wformat-truncation=]
-  596 |             "{\"id\": %d, \"album_year\": \"%s\", \"album_name\": \"%s\", \"album_artist\": \"%s\", \"album_genre\": \"%s\", \"album_art\": \"%s\", \"album_bio\": \"%s\", \"album_path\": \"%s\" }%s",
+backend/src/bussiness/music_service.c:565:122: aviso: la salida de la directiva ‘", "album_art": "’ podría truncarse al escribir 17 bytes en una región de un tamaño entre 4 y 518 [-Wformat-truncation=]
+  565 |             "{\"id\": %d, \"album_year\": \"%s\", \"album_name\": \"%s\", \"album_artist\": \"%s\", \"album_genre\": \"%s\", \"album_art\": \"%s\", \"album_bio\": \"%s\", \"album_path\": \"%s\" }%s",
       |                                                                                                                          ^~~~~~~~~~~~~~~~~~~~~
-backend/src/bussiness/music_service.c:595:9: nota: ‘snprintf’ manda 138 o más bytes (se asume 1242) a un destino de tamaño 600
-  595 |         snprintf(item, sizeof(item),
+backend/src/bussiness/music_service.c:564:9: nota: ‘snprintf’ manda 138 o más bytes (se asume 1242) a un destino de tamaño 600
+  564 |         snprintf(item, sizeof(item),
       |         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  596 |             "{\"id\": %d, \"album_year\": \"%s\", \"album_name\": \"%s\", \"album_artist\": \"%s\", \"album_genre\": \"%s\", \"album_art\": \"%s\", \"album_bio\": \"%s\", \"album_path\": \"%s\" }%s",
+  565 |             "{\"id\": %d, \"album_year\": \"%s\", \"album_name\": \"%s\", \"album_artist\": \"%s\", \"album_genre\": \"%s\", \"album_art\": \"%s\", \"album_bio\": \"%s\", \"album_path\": \"%s\" }%s",
       |             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  597 |             oneMusic->id, oneMusic->album_year, oneMusic->album_name, oneMusic->album_artist, oneMusic->album_genre, oneMusic->album_art, oneMusic->album_bio, oneMusic->album_path, (i < total_registros - 1) ? "," : "");
+  566 |             oneMusic->id, oneMusic->album_year, oneMusic->album_name, oneMusic->album_artist, oneMusic->album_genre, oneMusic->album_art, oneMusic->album_bio, oneMusic->album_path, (i < total_registros - 1) ? "," : "");
       |             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+backend/src/bussiness/player_service.c: En la función ‘route_post_player_stream’:
+backend/src/bussiness/player_service.c:157:5: aviso: declaración implícita de la función ‘url_decode’ [-Wimplicit-function-declaration]
+  157 |     url_decode(d_file_name, file_name);
+      |     ^~~~~~~~~~
+backend/src/bussiness/download_service.c: En la función ‘route_post_download_album’:
+backend/src/bussiness/download_service.c:144:14: aviso: la salida de la directiva ‘
+Connection: close
+
+   ’ podría truncarse al escribir 23 bytes en una región de un tamaño entre 0 y 256 [-Wformat-truncation=]
+  144 |              "HTTP/1.1 200 OK\r\n"
+      |              ^~~~~~~~~~~~~~~~~~~~~
+backend/src/bussiness/download_service.c:150:34: nota: la cadena de formato se definió aquí
+  150 |              "Content-Length: %ld\r\n"
+      |                                  ^~~~~
+  151 |              "Connection: close\r\n\r\n",
+      |              ~~~~~~~~~~~~~~~~~~~~~~~~~~
+backend/src/bussiness/download_service.c:143:5: nota: ‘snprintf’ manda entre 280 y 554 bytes a un destino de tamaño 512
+  143 |     snprintf(header, sizeof(header),
+      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  144 |              "HTTP/1.1 200 OK\r\n"
+      |              ~~~~~~~~~~~~~~~~~~~~~
+  145 |              "Access-Control-Allow-Origin: *\r\n"
+      |              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  146 |              "Access-Control-Allow-Methods: POST, OPTIONS\r\n"
+      |              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  147 |              "Access-Control-Expose-Headers: Content-Disposition, Content-Length\r\n"
+      |              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  148 |              "Content-Type: application/zip\r\n"
+      |              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  149 |              "Content-Disposition: attachment; filename=\"%s\"\r\n"
+      |              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  150 |              "Content-Length: %ld\r\n"
+      |              ~~~~~~~~~~~~~~~~~~~~~~~~~
+  151 |              "Connection: close\r\n\r\n",
+      |              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  152 |              zip_filename, file_size);
+      |              ~~~~~~~~~~~~~~~~~~~~~~~~
 En el fichero incluido desde backend/src/main.c:10:
 backend/src/system/session_manager.h:24:13: aviso: ‘trim_string’ se declaró ‘static’ pero nunca se define [-Wunused-function]
    24 | static void trim_string(char *str);

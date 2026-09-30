@@ -11,6 +11,8 @@
 #include "../bussiness/roles_service.h"
 #include "../bussiness/genres_service.h"
 #include "../bussiness/music_service.h"
+#include "../bussiness/player_service.h"
+#include "../bussiness/download_service.h"
 #include "session_manager.h"
 
 
@@ -136,6 +138,8 @@ void init_routes() {
     init_roles_routes();
     init_genres_routes();
     init_music_routes();
+    init_player_routes();
+    init_download_routes();
     init_session_routes();
 
     // 🔥 EJECUTAMOS EL REPORTE: Una vez que todos los módulos se registraron, volcamos el estado

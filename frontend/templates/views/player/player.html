@@ -1,0 +1,56 @@
+<div class="container-fluid" style="max-width: 900px; margin: 0 auto;">
+
+    <!-- Ficha superior del Álbum -->
+    <div class="panel panel-default" style="box-shadow: 0 4px 8px rgba(0,0,0,0.1); border-radius: 6px;">
+        <div class="panel-body">
+            <div class="row">
+                <div class="col-sm-5 text-center">
+                    <img id="player-album-cover"
+                         src="/img/no-cover.png"
+                         alt="Portada"
+                         class="img-thumbnail"
+                         style="width: 260px; height: 260px; object-fit: cover; border-radius: 6px; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+                </div>
+                <div class="col-sm-7">
+                    <h3 id="player-album-name" style="margin-top: 10px; font-weight: bold; color: #333;">Cargando Álbum...</h3>
+                    <p><strong>Artista:</strong> <span id="player-album-artist"></span></p>
+                    <p><strong>Año Release:</strong> <span id="player-album-year"></span></p>
+                    <p><strong>Género:</strong> <span id="player-album-genre"></span></p>
+                    <hr style="margin: 10px 0;">
+                    <label>Bio del Álbum:</label>
+                    <p id="player-album-bio" class="text-muted" style="font-size: 13px; line-height: 1.5;"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel del Reproductor y Playlist -->
+    <div class="panel panel-info" style="box-shadow: 0 4px 8px rgba(0,0,0,0.1); border-radius: 6px;">
+        <div class="panel-heading" style="font-weight: bold;">
+            <span class="glyphicon glyphicon-headphones"></span> Reproductor de Pistas
+            <button class="btn btn-default btn-xs pull-right" onclick="window.loadDashboardView(window.VIEWS_PATH + '/albums/albums.html')">
+                <span class="glyphicon glyphicon-arrow-left"></span> Volver a Álbumes
+            </button>
+        </div>
+        <div class="panel-body">
+
+            <!-- Barra de Audio Nativa con feedback de pista actual -->
+            <div style="background: #2b3035; padding: 15px; border-radius: 6px; margin-bottom: 15px;">
+                <audio id="audio-element" controls style="width: 100%; outline: none;"></audio>
+                <div style="color: #fff; margin-top: 8px; font-size: 13px;" class="text-center">
+                    <span id="player-track-counter">0 / 0</span> —
+                    <strong id="player-current-track">Ninguna pista seleccionada</strong>
+                </div>
+            </div>
+
+            <!-- Lista de Pistas interactiva -->
+            <div class="list-group" id="playlist-container" style="max-height: 400px; overflow-y: auto; margin-bottom: 0;">
+                <div class="list-group-item text-center text-muted">
+                    <span class="glyphicon glyphicon-refresh glyphicon-refresh-animate"></span> Explorando canciones del álbum...
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</div>
