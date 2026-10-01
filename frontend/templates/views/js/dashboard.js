@@ -380,25 +380,25 @@ document.addEventListener("DOMContentLoaded", () => {
         loadDashboardScript("/views/js/usuarios.js");
       }
       else if (viewPath.includes("register")) {
-        loadDashboardScript("/views/js/register.js");
+        loadDashboardScript(window.VIEWS_PATH +  "/js/register.js");
       }
       else if (viewPath.includes("password")) {
-        loadDashboardScript("/views/js/password.js");
+        loadDashboardScript(window.VIEWS_PATH + "/js/password.js");
       }
       else if (viewPath.includes("roles")) {
-        loadDashboardScript("/views/js/roles.js");
+        loadDashboardScript(window.VIEWS_PATH + "/js/roles.js");
       }
       else if (viewPath.includes("generos")) {
-        loadDashboardScript("/views/js/generos.js");
+        loadDashboardScript(window.VIEWS_PATH + "/js/generos.js");
       }
       else if (viewPath.includes("albums")) {
-        loadDashboardScript("/views/js/albums.js");
+        loadDashboardScript(window.VIEWS_PATH + "/js/albums.js");
       }
       else if (viewPath.includes("billboard")) {
-        loadDashboardScript("/views/js/billboard.js");
+        loadDashboardScript(window.VIEWS_PATH + "/js/billboard.js");
       }
       else if (viewPath.includes("home")) {
-        loadDashboardScript("/views/js/news.js");
+        loadDashboardScript(window.VIEWS_PATH + "/js/news.js");
       }
 
       setTimeout(() => {
