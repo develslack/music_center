@@ -70,15 +70,15 @@ document.addEventListener("DOMContentLoaded", () => {
       const html = await response.text();
       container.innerHTML = html;
 
-      // 🔹 Rutas apuntando a /views/js/ según el árbol de carpetas
+      // 🔹 Resuelve dinámicamente con window.VIEWS_PATH
       if (viewPath.includes("home.html")) {
-        loadScript("/views/js/news.js");
+        loadScript(window.VIEWS_PATH + "/js/news.js");
       } else if (viewPath.includes("login.html")) {
-        loadScript("/views/js/login.js");
+        loadScript(window.VIEWS_PATH + "/js/login.js");
       } else if (viewPath.includes("register.html")) {
-        loadScript("/views/js/register.js");
+        loadScript(window.VIEWS_PATH + "/js/register.js");
       } else if (viewPath.includes("password.html")) {
-        loadScript("/views/js/password.js");
+        loadScript(window.VIEWS_PATH + "/js/password.js");
       }
 
     } catch (err) {

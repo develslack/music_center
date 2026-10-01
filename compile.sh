@@ -36,7 +36,7 @@ if [ -f backend/bin/music-center ]; then
     echo "# ======================================================= #"
     echo "¿Qué acción desea realizar?"
     echo "  [1] Ejecutar en entorno de desarrollo"
-    echo "  [2] Instalar en /opt/music-center/ (Requiere sudo)"
+    echo "  [2] Instalar en /mnt/athic/music-center/ (Requiere sudo)"
     echo "  [3] Salir"
     echo "# ======================================================= #"
     read -p "Seleccione una opción [1-3]: " resp
@@ -50,12 +50,13 @@ if [ -f backend/bin/music-center ]; then
             ;;
         2)
             clear
-            echo "Iniciando instalación en /opt/music-center/..."
-            DEST_DIR="/opt/music-center"
+            echo "Iniciando instalación en /mnt/athic/music-center/..."
+            DEST_DIR="/mnt/athic/music-center"
 
             echo "=> Creando estructura de directorios..."
-            sudo mkdir -p $DEST_DIR/backend/bin/music
-            sudo mkdir -p $DEST_DIR/backend/bin/covers
+            sudo mkdir -p $DEST_DIR/backend/bin
+            sudo mkdir -p $DEST_DIR/backend/music
+            sudo mkdir -p $DEST_DIR/backend/art
             sudo mkdir -p $DEST_DIR/frontend
 
             echo "=> Copiando binario del backend..."
@@ -67,8 +68,8 @@ if [ -f backend/bin/music-center ]; then
             sudo cp -r frontend/* $DEST_DIR/frontend/
 
             echo "=> Estableciendo permisos de escritura para directorios dinámicos..."
-            sudo chmod 777 $DEST_DIR/backend/bin/music
-            sudo chmod 777 $DEST_DIR/backend/bin/covers
+            sudo chmod 777 $DEST_DIR/backend/music
+            sudo chmod 777 $DEST_DIR/backend/art
 
             echo "# ======================================================= #"
             echo "✅ Instalación completada con éxito."
@@ -76,7 +77,7 @@ if [ -f backend/bin/music-center ]; then
             sudo chmod -R 777 $DEST_DIR
             echo "# ======================================================= #"
             echo "Iniciando la app..."
-            $DEST_DIR/backend/bin/egl-sirhu > /dev/null 2>&1 &
+            #$DEST_DIR/backend/bin/egl-sirhu > /dev/null 2>&1 &
             echo "# ======================================================= #"
             ;;
         3)
