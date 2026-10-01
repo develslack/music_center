@@ -61,11 +61,11 @@ window.abrirAimpPlayer = async function(album) {
         </div>
 
         <div class="aimp-body" id="${winId}-body">
-            <!-- Pantalla LCD con Miniatura de Portada -->
+            <!-- Pantalla LCD con Miniatura de Portada Interactiva -->
             <div class="aimp-display-panel">
                 <div class="aimp-marquee" id="${winId}-marquee">STOPPED :: ${album.album_artist} - ${album.album_name}</div>
                 <div class="aimp-display-body" style="display: flex; align-items: center; margin-top: 6px;">
-                    <div class="aimp-cover-box" style="width: 68px; height: 68px; min-width: 68px; border-radius: 4px; border: 1px solid #3a4146; background: #000; box-shadow: inset 0 0 5px rgba(0,0,0,0.8), 0 2px 5px rgba(0,0,0,0.5); overflow: hidden; margin-right: 10px; display: flex; align-items: center; justify-content: center;">
+                    <div class="aimp-cover-box" style="width: 68px; height: 68px; min-width: 68px; border-radius: 4px; border: 1px solid #3a4146; background: #000; box-shadow: inset 0 0 5px rgba(0,0,0,0.8), 0 2px 5px rgba(0,0,0,0.5); overflow: hidden; margin-right: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer;" title="Haga clic para ver la reseña del álbum">
                         <img id="${winId}-cover"
                              src="/img/no-cover.png"
                              alt="Portada"
@@ -163,6 +163,15 @@ async function inicializarAlbumTracks(winId, album) {
             })
             .catch(() => {});
         } catch (e) {}
+
+        // Evento click sobre la portada para abrir el modal con album_bio
+        const coverBox = imgCover.closest(".aimp-cover-box");
+        if (coverBox) {
+            coverBox.onclick = (e) => {
+                e.stopPropagation();
+                mostrarModalBioAlbum(album, imgCover.src);
+            };
+        }
     }
 
     let tracks = [];
@@ -281,6 +290,79 @@ async function inicializarAlbumTracks(winId, album) {
         const pos = (e.clientX - rect.left) / rect.width;
         window.AimpMaster.audio.currentTime = pos * window.AimpMaster.audio.duration;
     };
+}
+
+// ================================================================================================================= //
+// MODAL PARA MOSTRAR RESEÑA / ALBUM_BIO
+// ================================================================================================================= //
+function mostrarModalBioAlbum(album, coverSrc) {
+    let modal = document.getElementById("modal-player-album-bio");
+
+    if (!modal) {
+        modal = document.createElement("div");
+        modal.id = "modal-player-album-bio";
+        modal.className = "modal fade";
+        modal.tabIndex = -1;
+        modal.role = "dialog";
+        modal.style.zIndex = "1090"; // Garantiza visibilidad por encima de las ventanas flotantes
+
+        modal.innerHTML = `
+            <div class="modal-dialog" role="document">
+                <div class="modal-content" style="background: #25282c; color: #e0e0e0; border: 1px solid #444c54; border-radius: 6px; box-shadow: 0 10px 30px rgba(0,0,0,0.8);">
+                    <div class="modal-header" style="border-bottom: 1px solid #373e44; padding: 12px 15px;">
+                        <button type="button" class="close" data-dismiss="modal" style="color: #fff; opacity: 0.8;">&times;</button>
+                        <h4 class="modal-title" id="bio-modal-title" style="color: #00e5ff; font-weight: bold; font-size: 15px;">
+                            <span class="glyphicon glyphicon-book"></span> Reseña del Álbum
+                        </h4>
+                    </div>
+                    <div class="modal-body" style="padding: 15px;">
+                        <div class="row">
+                            <div class="col-sm-4 text-center">
+                                <img id="bio-modal-cover" src="/img/no-cover.png" alt="Portada"
+                                     class="img-thumbnail"
+                                     style="max-width: 100%; border-radius: 6px; border: 1px solid #444; box-shadow: 0 4px 8px rgba(0,0,0,0.6); margin-bottom: 10px;">
+                            </div>
+                            <div class="col-sm-8">
+                                <h4 id="bio-modal-album-name" style="margin-top: 0; color: #fff; font-weight: bold;"></h4>
+                                <p style="margin-bottom: 5px;"><strong>Artista:</strong> <span id="bio-modal-artist" style="color: #b0c4de;"></span></p>
+                                <p style="margin-bottom: 5px;"><strong>Año:</strong> <span id="bio-modal-year"></span> &nbsp;|&nbsp; <strong>Género:</strong> <span id="bio-modal-genre"></span></p>
+                                <hr style="border-top: 1px solid #373e44; margin: 10px 0;">
+                                <label style="color: #8fa0ad; font-size: 12px; text-transform: uppercase;">Biopic / Información:</label>
+                                <div id="bio-modal-text" style="line-height: 1.6; font-size: 13px; color: #d0d7de; max-height: 220px; overflow-y: auto; white-space: pre-wrap; padding-right: 5px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer" style="border-top: 1px solid #373e44; padding: 10px 15px;">
+                        <button type="button" class="btn btn-danger btn-sm" data-dismiss="modal">
+                            <span class="glyphicon glyphicon-remove"></span> Cerrar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    // Actualizar contenido con los datos del álbum clickeado
+    document.getElementById("bio-modal-cover").src = coverSrc || "/img/no-cover.png";
+    document.getElementById("bio-modal-album-name").textContent = album.album_name || "Álbum Desconocido";
+    document.getElementById("bio-modal-artist").textContent = album.album_artist || "Artista Desconocido";
+    document.getElementById("bio-modal-year").textContent = album.album_year || "S/D";
+    document.getElementById("bio-modal-genre").textContent = album.album_genre || "S/D";
+
+    const bioText = (album.album_bio && album.album_bio.trim() !== "")
+        ? album.album_bio
+        : "No hay reseña o biografía disponible para este álbum.";
+    document.getElementById("bio-modal-text").textContent = bioText;
+
+    // Ajuste del z-index del backdrop para que no cubra el modal
+    $(modal).on("show.bs.modal", function() {
+        setTimeout(() => {
+            $(".modal-backdrop").last().css("z-index", 1085);
+        }, 0);
+    });
+
+    $(modal).modal("show");
 }
 
 // ================================================================================================================= //

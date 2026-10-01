@@ -23,6 +23,9 @@ gcc -Wall -g -std=gnu11  -o backend/bin/music-center \
     backend/src/bussiness/music_service.h backend/src/bussiness/music_service.c \
     backend/src/bussiness/player_service.h backend/src/bussiness/player_service.c \
     backend/src/bussiness/download_service.h backend/src/bussiness/download_service.c \
+    backend/src/bussiness/billboard_service.h backend/src/bussiness/billboard_service.c \
+    backend/src/bussiness/analytics_music_service.h backend/src/bussiness/analytics_music_service.c \
+    backend/src/bussiness/news_service.h backend/src/bussiness/news_service.c \
     backend/src/main.c \
     -lpthread -lmysqlclient -lssl -lcrypto 2>&1 | tee comp_err.txt
 

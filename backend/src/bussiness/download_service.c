@@ -11,6 +11,8 @@
 
 #define CHUNK_SIZE 65536 // 64 KB de buffer constante
 
+// =================================================================================================================== //
+
 static void get_download_value(const char *body, const char *key, char *out, size_t out_size) {
     char *pos = strstr(body, key);
     if (!pos) {
@@ -26,6 +28,8 @@ static void get_download_value(const char *body, const char *key, char *out, siz
     out[len] = '\0';
 }
 
+// =================================================================================================================== //
+
 static void sanitize_filename(const char *input, char *output, size_t max_len) {
     size_t j = 0;
     for (size_t i = 0; input[i] != '\0' && j < max_len - 1; i++) {
@@ -38,6 +42,8 @@ static void sanitize_filename(const char *input, char *output, size_t max_len) {
     }
     output[j] = '\0';
 }
+
+// =================================================================================================================== //
 
 static void route_post_download_album(int client, const char *body) {
     char id_str[16] = {0};
@@ -168,6 +174,10 @@ static void route_post_download_album(int client, const char *body) {
     printf("✅ [DOWNLOAD] Álbum '%s' (%ld bytes) transmitido con éxito.\n", zip_filename, file_size);
 }
 
+// =================================================================================================================== //
+
 void init_download_routes() {
     add_route("POST", "/download/album", route_post_download_album);
 }
+
+// =================================================================================================================== //

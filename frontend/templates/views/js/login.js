@@ -38,6 +38,7 @@ function initLoginForm() {
 
       if (response.ok && data.status === "success") {
         console.log("Ingresando...");
+        sessionStorage.removeItem("analytics_welcome_shown");
         var mensaje = `<br><div class="alert alert-success alert-dismissible">
                                     <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
                                         <p align=center><span class="glyphicon glyphicon-ok" aria-hidden="true"></span> Bienvenido/a, aguarde un instante...</p></div>`;

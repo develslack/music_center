@@ -1,37 +1,32 @@
 console.clear();
 console.log("✅ Módulo Albums Iniciado de forma nativa.");
 
-// Reutilizamos la instancia global para evitar SyntaxError de redeclaración[cite: 20]
+// Reutilizamos la instancia global para evitar SyntaxError de redeclaración
 window.dTable = window.dTable || null;
 
 // ================================================================================================================= //
-// FUNCIÓN GLOBAL PARA FILTRAR EN DATATABLES POR ARTISTA O GÉNERO[cite: 20]
+// FUNCIÓN GLOBAL PARA FILTRAR EN DATATABLES POR ARTISTA O GÉNERO
 // ================================================================================================================= //
 window.filtrarTablaAlbums = function(tipo, valor) {
     if (!window.dTable) return;
 
     if (tipo === "artista") {
-        // Limpiamos posible filtro previo en Género (Columna 4)[cite: 20]
         window.dTable.column(4).search("");
 
         if (!valor || valor.trim() === "") {
-            // Si está vacío, limpiamos filtro y mostramos todos los registros[cite: 20]
             window.dTable.column(3).search("").draw();
             console.log("🔍 Filtro Artista eliminado: Mostrando todos los registros.");
         } else {
-            // Búsqueda flexible por texto parcial[cite: 20]
             window.dTable.column(3).search(valor.trim(), false, true).draw();
             console.log(`🔍 Filtrando por Artista: "${valor}"`);
         }
     } else if (tipo === "genero") {
-        // Limpiamos posible filtro previo en Artista (Columna 3)[cite: 20]
         window.dTable.column(3).search("");
 
         if (!valor || valor.trim() === "") {
             window.dTable.column(4).search("").draw();
             console.log("🔍 Filtro Género eliminado: Mostrando todos los registros.");
         } else {
-            // Expresión regular exacta para género[cite: 20]
             window.dTable.column(4).search('^' + valor.trim() + '$', true, false).draw();
             console.log(`🔍 Filtrando por Género: "${valor}"`);
         }
@@ -40,8 +35,18 @@ window.filtrarTablaAlbums = function(tipo, valor) {
 
 (async () => {
   try {
+    // 🛡️ VERIFICACIÓN DE ROL: Leer sesión activa
+    const userSession = JSON.parse(localStorage.getItem("user") || "{}");
+    const esAdmin = parseInt(userSession.rol_id) === 1;
+
+    // Si es un usuario común, ocultamos el botón de dar de alta álbumes si existe en la vista[cite: 10, 11]
+    const btnAddAlbum = document.getElementById("add-album-form");
+    if (btnAddAlbum && !esAdmin) {
+        btnAddAlbum.style.display = "none";
+    }
+
     // ================================================================================================================= //
-    // 1. CARGA DE LA TABLA MAESTRA DESDE EL BACKEND EN C[cite: 20]
+    // 1. CARGA DE LA TABLA MAESTRA DESDE EL BACKEND EN C
     // ================================================================================================================= //
     const response = await fetch(window.API_BASE_URL + "/music/list");
     const albums = await response.json();
@@ -52,6 +57,21 @@ window.filtrarTablaAlbums = function(tipo, valor) {
 
     albums.forEach((album) => {
       const row = document.createElement("tr");
+
+      // Botón Editar renderizado únicamente para Administradores[cite: 10, 11]
+      const btnEditarHtml = esAdmin ? `
+          <button class="btn btn-warning btn-sm btn-editar-album"
+                  data-album_id="${album.id}"
+                  data-album_year="${album.album_year}"
+                  data-album_name="${album.album_name}"
+                  data-album_artist="${album.album_artist}"
+                  data-album_genre="${album.album_genre}"
+                  data-album_art="${album.album_art}"
+                  data-album_bio="${album.album_bio}"
+                  data-album_path="${album.album_path}">
+            <span class="glyphicon glyphicon-edit"></span> Editar
+          </button>` : '';
+
       row.innerHTML = `
         <td class="text-center" style="vertical-align: middle;">
           <img id="cover-album-${album.id}"
@@ -67,17 +87,7 @@ window.filtrarTablaAlbums = function(tipo, valor) {
         <td class="text-center" style="vertical-align: middle;">${album.album_artist || ""}</td>
         <td class="text-center" style="vertical-align: middle;">${album.album_genre || ""}</td>
         <td class="text-center" style="vertical-align: middle;">
-          <button class="btn btn-warning btn-sm btn-editar-album"
-                  data-album_id="${album.id}"
-                  data-album_year="${album.album_year}"
-                  data-album_name="${album.album_name}"
-                  data-album_artist="${album.album_artist}"
-                  data-album_genre="${album.album_genre}"
-                  data-album_art="${album.album_art}"
-                  data-album_bio="${album.album_bio}"
-                  data-album_path="${album.album_path}">
-            <span class="glyphicon glyphicon-edit"></span> Editar
-          </button>
+          ${btnEditarHtml}
           <button class="btn btn-default btn-sm btn-escuchar-album"
                   data-album_id="${album.id}"
                   data-album_year="${album.album_year}"
@@ -177,29 +187,24 @@ window.filtrarTablaAlbums = function(tipo, valor) {
                     img.src = res.data;
                     img.setAttribute("data-loaded", "true");
                 }
-            } catch (e) {
-                // Conserva el fallback /img/no-cover.png[cite: 20]
-            }
+            } catch (e) {}
         });
     }
 
-    // El evento draw.dt actualiza contador y solicita portadas de la página o búsqueda actual
     window.dTable.on('draw.dt', function() {
         actualizarContadorRegistros();
         cargarPortadasVisibles();
     });
 
-    // Ejecución inicial tras montar la tabla
     actualizarContadorRegistros();
     cargarPortadasVisibles();
 
-    // 🚀 Aplicamos filtro si venía preseleccionado desde el sidebar[cite: 20]
     if (window.albumFilter) {
         window.filtrarTablaAlbums(window.albumFilter.tipo, window.albumFilter.valor);
     }
 
     // ================================================================================================================= //
-    // 2. PREPARACIÓN DEL MODAL[cite: 20]
+    // 2. PREPARACIÓN DEL MODAL
     // ================================================================================================================= //
     const contenedorModal = document.getElementById("contenedor-modal-maestro-albums");
     if (contenedorModal) {
@@ -208,15 +213,25 @@ window.filtrarTablaAlbums = function(tipo, valor) {
     }
 
     // ================================================================================================================= //
-    // 3. CAPTURA DE EVENTOS (ALTA, EDICIÓN Y REPRODUCCIÓN)[cite: 20]
+    // 3. CAPTURA DE EVENTOS (ALTA, EDICIÓN Y REPRODUCCIÓN)
     // ================================================================================================================= //
     $(document).off("click", "#add-album-form").on("click", "#add-album-form", function(e) {
         e.preventDefault();
+        const sesion = JSON.parse(localStorage.getItem("user") || "{}");
+        if (parseInt(sesion.rol_id) !== 1) {
+            alert("🛑 Acceso denegado: Esta función requiere privilegios de Administrador.");
+            return;
+        }
         prepararYMostrarModal("alta");
     });
 
     $(document).off("click", ".btn-editar-album").on("click", ".btn-editar-album", function(e) {
         e.preventDefault();
+        const sesion = JSON.parse(localStorage.getItem("user") || "{}");
+        if (parseInt(sesion.rol_id) !== 1) {
+            alert("🛑 Acceso denegado: Esta función requiere privilegios de Administrador.");
+            return;
+        }
         const datos = {
             id: $(this).attr("data-album_id"),
             album_year: $(this).attr("data-album_year"),
@@ -230,7 +245,7 @@ window.filtrarTablaAlbums = function(tipo, valor) {
         prepararYMostrarModal("edicion", datos);
     });
 
-    // 🎵 EVENTO REPRODUCIR: Abre la ventana flotante AIMP multi-instancia
+    // 🎵 EVENTO REPRODUCIR
     $(document).off("click", ".btn-escuchar-album").on("click", ".btn-escuchar-album", function(e) {
         e.preventDefault();
         const albumData = {
@@ -244,18 +259,29 @@ window.filtrarTablaAlbums = function(tipo, valor) {
             album_path: $(this).attr("data-album_path")
         };
 
-        // Cacheamos para persistencia de la instancia flotante
+        fetch(window.API_BASE_URL + "/billboard/hit", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: `id=${encodeURIComponent(albumData.id)}`
+        }).catch(() => {});
+
+        const userSessionRaw = sessionStorage.getItem("user_session");
+        const userId = userSessionRaw ? JSON.parse(userSessionRaw).id : 1;
+
+        fetch(window.API_BASE_URL + "/analytics/listen", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: `user_id=${encodeURIComponent(userId)}&album_id=${encodeURIComponent(albumData.id)}`
+        }).catch(() => {});
+
         sessionStorage.setItem(`album_cache_aimp-win-${albumData.id}`, JSON.stringify(albumData));
 
         if (typeof window.abrirAimpPlayer === "function") {
             window.abrirAimpPlayer(albumData);
-        } else {
-            console.error("⚠️ El módulo window.abrirAimpPlayer no está disponible. Asegúrate de incluir player.js en dashboard.html.");
         }
     });
 
-
-    // 📥 EVENTO DESCARGAR: Streaming binario en segundo plano con diálogo nativo
+    // 📥 EVENTO DESCARGAR
     $(document).off("click", ".btn-download-album").on("click", ".btn-download-album", async function(e) {
         e.preventDefault();
         const $btn =$(this);
@@ -269,7 +295,6 @@ window.filtrarTablaAlbums = function(tipo, valor) {
         const originalHtml = $btn.html();
         const originalStyle = $btn.attr("style") || "";
 
-        // Fase 1: Feedback mientras el servidor comprime el directorio físico
         $btn.prop("disabled", true)
             .css({
                 "transition": "background 0.1s ease",
@@ -291,13 +316,11 @@ window.filtrarTablaAlbums = function(tipo, valor) {
                 return;
             }
 
-            // Obtenemos el peso total en bytes para el cálculo porcentual
             const contentLength = parseInt(resp.headers.get("Content-Length") || "0", 10);
             const reader = resp.body.getReader();
             const chunks = [];
             let receivedBytes = 0;
 
-            // Fase 2: Lectura de chunks y animación progresiva del botón
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
@@ -307,18 +330,14 @@ window.filtrarTablaAlbums = function(tipo, valor) {
 
                 if (contentLength > 0) {
                     const percent = Math.min(100, Math.round((receivedBytes / contentLength) * 100));
-
-                    // Pintado progresivo de izquierda a derecha con gradiente CSS
                     $btn.css("background", `linear-gradient(to right, #2ecc71 ${percent}%, #343a40 ${percent}%)`);
                     $btn.html(`<span class="glyphicon glyphicon-download"></span> ${percent}%`);
                 } else {
-                    // Fallback si no viene Content-Length: acumula megabytes leídos
                     const mb = (receivedBytes / (1024 * 1024)).toFixed(1);
                     $btn.html(`<span class="glyphicon glyphicon-download"></span> ${mb} MB`);
                 }
             }
 
-            // Al llegar al 100% generamos el archivo y abrimos el diálogo de guardado
             $btn.css("background", "#2ecc71").html('<span class="glyphicon glyphicon-ok"></span> ¡Listo!');
 
             const blob = new Blob(chunks, { type: "application/zip" });
@@ -334,7 +353,6 @@ window.filtrarTablaAlbums = function(tipo, valor) {
             setTimeout(() => {
                 window.URL.revokeObjectURL(downloadUrl);
                 a.remove();
-                // Restauramos el botón a su estado original tras finalizar
                 $btn.prop("disabled", false).html(originalHtml).attr("style", originalStyle);
             }, 1800);
 
@@ -345,18 +363,21 @@ window.filtrarTablaAlbums = function(tipo, valor) {
         }
     });
 
-    // FIN DEL LISTENER DEL BOTON DOWNLOAD
-    // ==================================================================================================================================== //
-
   } catch (error) {
     console.error("💥 Error general en el módulo Albums:", error);
   }
 })();
 
 // ===================================================================================================================== //
-// MODAL DE ALTA / EDICIÓN[cite: 20]
+// MODAL DE ALTA / EDICIÓN (PROTEGIDO POR ROL)[cite: 10, 11]
 // ===================================================================================================================== //
 async function prepararYMostrarModal(modo, datos = null) {
+    const sesion = JSON.parse(localStorage.getItem("user") || "{}");
+    if (parseInt(sesion.rol_id) !== 1) {
+        alert("🛑 Acceso denegado: Esta función requiere privilegios de Administrador.");
+        return;
+    }
+
     const $modal =$("#myModal-albums");
     if ($modal.length === 0) return;
 
@@ -389,8 +410,8 @@ async function prepararYMostrarModal(modo, datos = null) {
             </div>
 
             <div class="form-group">
-                <label><span class="label label-default">Nombre del Archivo de Portada</span></label>
-                <input type="file" class="form-control" id="modal-album-album_art">
+                <label><span class="label label-default">Archivo de Portada</span> ${datos && datos.album_art ? `<small class="text-muted">(Actual: ${datos.album_art})</small>` : ''}</label>
+                <input type="file" class="form-control" id="modal-album-album_art" accept="image/png, image/jpeg, image/jpg">
             </div>
 
             <div class="form-group">
@@ -432,21 +453,46 @@ async function prepararYMostrarModal(modo, datos = null) {
 
         const statusContainer = document.getElementById("modal-status-message");
         const id = document.getElementById("modal-album-album_id").value;
+        const fileInput = document.getElementById("modal-album-album_art");
+
         const payload = {
             album_name: document.getElementById("modal-album-album_name").value,
             album_year: document.getElementById("modal-album-album_year").value,
             album_artist: document.getElementById("modal-album-album_artist").value,
             album_genre: document.getElementById("modal-album-album_genre").value,
-            album_art: document.getElementById("modal-album-album_art").value,
             album_bio: document.getElementById("modal-album-album_bio").value,
             album_path: document.getElementById("modal-album-album_path").value,
+            art_filename: "",
+            art_data: ""
         };
 
-        statusContainer.innerHTML = `<span class="text-info">⏳ Procesando solicitud...</span>`;
+        statusContainer.innerHTML = `<span class="text-info">⏳ Procesando portada y datos del álbum...</span>`;
+
+        if (fileInput && fileInput.files && fileInput.files.length > 0) {
+            const file = fileInput.files[0];
+            payload.art_filename = file.name;
+            try {
+                payload.art_data = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(file);
+                });
+            } catch (fileErr) {
+                console.error("Error al leer archivo de imagen:", fileErr);
+            }
+        }
 
         try {
             const endpoint = id === "" ? "/music/add" : "/music/edit";
-            let bodyParams = `album_name=${encodeURIComponent(payload.album_name)}&album_year=${encodeURIComponent(payload.album_year)}&album_artist=${encodeURIComponent(payload.album_artist)}&album_genre=${encodeURIComponent(payload.album_genre)}&album_art=${encodeURIComponent(payload.album_art)}&album_bio=${encodeURIComponent(payload.album_bio)}&album_path=${encodeURIComponent(payload.album_path)}`;
+            let bodyParams = `album_name=${encodeURIComponent(payload.album_name)}` +
+                             `&album_year=${encodeURIComponent(payload.album_year)}` +
+                             `&album_artist=${encodeURIComponent(payload.album_artist)}` +
+                             `&album_genre=${encodeURIComponent(payload.album_genre)}` +
+                             `&album_bio=${encodeURIComponent(payload.album_bio)}` +
+                             `&album_path=${encodeURIComponent(payload.album_path)}` +
+                             `&art_filename=${encodeURIComponent(payload.art_filename)}` +
+                             `&art_data=${encodeURIComponent(payload.art_data)}`;
 
             if (id !== "") {
                 bodyParams = `id=${encodeURIComponent(id)}&` + bodyParams;
@@ -475,6 +521,8 @@ async function prepararYMostrarModal(modo, datos = null) {
         }
     };
 }
+
+// =================================================================================================================== //
 
 async function cargarGenerosMusicalesModal(valorSeleccionado) {
     const select = document.getElementById("modal-album-album_genre");

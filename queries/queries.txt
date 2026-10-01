@@ -11,7 +11,6 @@ password VARCHAR(260) NOT NULL,
 rol_id int(11) not null
 )ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-select * from mc_usuarios;
 
 # ================================================================================================== #
 
@@ -37,6 +36,19 @@ CREATE TABLE IF NOT EXISTS mc_music(
   album_chart int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-select * from mc_music;
+# ================================================================================================== #
+
+CREATE TABLE IF NOT EXISTS mc_user_listens (
+  id INT(11) AUTO_INCREMENT PRIMARY KEY,
+  user_id INT(11) NOT NULL,
+  album_id INT(11) NOT NULL,
+  listen_count INT(11) DEFAULT 1,
+  first_listened_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  last_listened_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uk_user_album (user_id, album_id),
+  CONSTRAINT fk_listens_usuario FOREIGN KEY (user_id) REFERENCES mc_usuarios(id) ON DELETE CASCADE,
+  CONSTRAINT fk_listens_album FOREIGN KEY (album_id) REFERENCES mc_music(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 # ================================================================================================== #
+

@@ -1,0 +1,49 @@
+<div class="container-fluid" style="padding: 15px;">
+<div class="jumbotron">
+
+    <!-- Encabezado Estilo Revista Billboard -->
+    <div class="page-header" style="margin-top: 0; border-bottom: 2px solid #e74c3c;">
+        <h2 style="font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #2c3e50; margin: 0;">
+            <span class="glyphicon glyphicon-fire" style="color: #e74c3c;"></span> Billboard Official Charts
+            <small style="font-size: 13px; font-weight: normal; color: #7f8c8d; text-transform: none;">
+                — Ranking en tiempo real de los álbumes con más reproducciones en el sistema
+            </small>
+        </h2>
+    </div>
+
+    <!-- Podio Top 3 -->
+    <div class="row" id="billboard-podium" style="margin-bottom: 20px;">
+        <div class="col-xs-12 text-center text-muted">
+            <span class="glyphicon glyphicon-refresh glyphicon-refresh-animate"></span> Compilando el Top de reproducciones...
+        </div>
+    </div>
+
+    <!-- Tabla Top 4 al 10 -->
+    <div class="panel panel-default" style="box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-radius: 6px;">
+        <div class="panel-heading" style="background: #2c3e50; color: #fff; font-weight: bold;">
+            <span class="glyphicon glyphicon-list-alt"></span> Posiciones 4 al 10
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover table-striped" style="margin-bottom: 0;">
+                <thead>
+                    <tr style="background: #ecf0f1; font-size: 12px; text-transform: uppercase;">
+                        <th class="text-center" style="width: 60px;">Puesto</th>
+                        <th class="text-center" style="width: 70px;">Portada</th>
+                        <th>Álbum / Artista</th>
+                        <th class="text-center">Género</th>
+                        <th class="text-center">Año</th>
+                        <th class="text-center" style="width: 130px;">Reproducciones</th>
+                        <th class="text-center" style="width: 100px;">Acción</th>
+                    </tr>
+                </thead>
+                <tbody id="billboard-table-body">
+                    <tr>
+                        <td colspan="7" class="text-center text-muted">Cargando ranking...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+</div>

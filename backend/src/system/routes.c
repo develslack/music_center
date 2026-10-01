@@ -13,6 +13,9 @@
 #include "../bussiness/music_service.h"
 #include "../bussiness/player_service.h"
 #include "../bussiness/download_service.h"
+#include "../bussiness/billboard_service.h"
+#include "../bussiness/analytics_music_service.h"
+#include "../bussiness/news_service.h"
 #include "session_manager.h"
 
 
@@ -140,6 +143,9 @@ void init_routes() {
     init_music_routes();
     init_player_routes();
     init_download_routes();
+    init_billboard_routes();
+    init_analytics_music_routes();
+    init_news_routes();
     init_session_routes();
 
     // 🔥 EJECUTAMOS EL REPORTE: Una vez que todos los módulos se registraron, volcamos el estado
